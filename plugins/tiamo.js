@@ -1,4 +1,3 @@
-
 const handler = async (m, { conn }) => {
   try {
     const risposte = [
