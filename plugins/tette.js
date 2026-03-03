@@ -1,4 +1,4 @@
-// Se vuoi mantenere il ranking
+// Database temporaneo per il ranking
 globalThis.tetteRank = globalThis.tetteRank || {};
 
 let handler = async (m, { conn }) => {
@@ -13,36 +13,54 @@ let handler = async (m, { conn }) => {
 
   if (!user) return m.reply('Devi menzionare qualcuno 😏');
 
-  let numero = Math.floor(Math.random() * 9) + 1;
-  let lettere = ['A','B','C','D','E','F'];
-  let lettera = lettere[Math.floor(Math.random() * lettere.length)];
+  // --- LOGICA MISURE REALI ---
+  const taglieItaliane = ['1ª', '2ª', '3ª', '4ª', '5ª', '6ª', '7ª', '8ª'];
+  const coppe = ['A', 'B', 'C', 'D', 'E', 'F'];
 
-  let misura = numero + lettera;
+  // Distribuzione pesata: la 2ª, 3ª e 4ª con coppe B/C sono le più comuni
+  let numero = taglieItaliane[Math.floor(Math.random() * taglieItaliane.length)];
+  let coppa = coppe[Math.floor(Math.random() * coppe.length)];
 
-  // 10% possibilità negativa
-  if (Math.random() < 0.10) {
-    misura = '-' + misura;
-  }
-
+  // --- DETERMINAZIONE RARITÀ E LOGICA ---
   let roll = Math.random();
   let rarita = 'COMMON';
-
-  if (roll > 0.95) rarita = 'MYTHIC 🔱';
-  else if (roll > 0.85) rarita = 'LEGENDARY 🔥';
-  else if (roll > 0.65) rarita = 'EPIC ⚡';
-  else if (roll > 0.40) rarita = 'RARE ⭐';
-
   let fortuna = Math.floor(Math.random() * 101);
+
+  if (roll > 0.97) {
+    rarita = 'MYTHIC 🔱';
+    numero = '10ª'; // Misura extra-ordinaria
+    coppa = 'H';    // Coppa enorme
+  } else if (roll > 0.85) {
+    rarita = 'LEGENDARY 🔥';
+    numero = ['6ª', '7ª', '8ª'][Math.floor(Math.random() * 3)];
+    coppa = ['E', 'F', 'G'][Math.floor(Math.random() * 3)];
+  } else if (roll > 0.65) {
+    rarita = 'EPIC ⚡';
+    coppa = ['D', 'E'][Math.floor(Math.random() * 2)];
+  } else if (roll > 0.40) {
+    rarita = 'RARE ⭐';
+    coppa = 'C';
+  }
+
+  // 10% possibilità di misura "mini" (reale ma piccola)
+  if (Math.random() < 0.10) {
+    numero = '1ª';
+    coppa = 'A';
+    rarita = 'PETITE ✨';
+  }
+
+  let misuraCompleta = `${numero} Coppa ${coppa}`;
 
   // Ranking
   if (!globalThis.tetteRank[user]) globalThis.tetteRank[user] = 0;
   globalThis.tetteRank[user] += 1;
 
-  let testo =
-    'oh @' + user.split('@')[0] + ' ha una ' + misura +
-    '\n\n🎲 Rarità: ' + rarita +
-    '\n🍀 Fortuna: ' + fortuna + '%' +
-    '\n🏆 Livello Caos: ' + globalThis.tetteRank[user];
+  let testo = `🔍 *ANALISI VOLUMETRICA* 🔍\n\n` +
+    `L'utente @${user.split('@')[0]} ha una:\n` +
+    `👙 *${misuraCompleta}*\n\n` +
+    `🎲 Rarità: *${rarita}*\n` +
+    `🍀 Fortuna: *${fortuna}%*\n` +
+    `🏆 Livello Caos: *${globalThis.tetteRank[user]}*`;
 
   await conn.sendMessage(
     m.chat,
@@ -54,10 +72,9 @@ let handler = async (m, { conn }) => {
   );
 };
 
-handler.help = ['tette',];
+handler.help = ['tette'];
 handler.tags = ['giochi'];
 handler.command = /^(tette)$/i;
 handler.group = true;
-handler.botAdmin = false;
-handler.fail = null;
+
 export default handler;
