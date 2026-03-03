@@ -1,96 +1,71 @@
 let handler = async (m, { conn, command, participants }) => {
   let mentions = m.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-  
-  // LOGICA PER COMANDO CASUALE
-  if (command.toLowerCase() === 'orgiacasuale' || command.toLowerCase() === 'orgiarandom') {
-    // Prende i membri del gruppo escludendo il bot stesso
-    let groupMembers = participants.map(u => u.id).filter(v => v !== conn.user.jid);
-    
-    // Sceglie un numero casuale di partecipanti tra 4 e 15
-    let randomCount = Math.floor(Math.random() * (15 - 4 + 1)) + 4;
-    
-    // Se il gruppo ha meno persone del numero scelto, le prende tutte (minimo 4)
-    let finalCount = Math.min(randomCount, groupMembers.length);
-    
-    if (finalCount < 4) {
-        return conn.sendMessage(m.chat, { text: "❌ *Errore:* Ci devono essere almeno 4 persone nel gruppo per iniziare il massacro!" }, { quoted: m });
-    }
 
-    // Seleziona i membri casuali
+  if (command.toLowerCase() === 'orgiacasuale' || command.toLowerCase() === 'orgiarandom') {
+    let groupMembers = participants.map(u => u.id).filter(v => v !== conn.user.jid);
+    let randomCount = Math.floor(Math.random() * (15 - 4 + 1)) + 4;
+    let finalCount = Math.min(randomCount, groupMembers.length);
+    if (finalCount < 4) return conn.sendMessage(m.chat, { text: "❌ *Errore:* Ci vuole un branco per questo massacro!" }, { quoted: m });
     mentions = groupMembers.sort(() => Math.random() - 0.5).slice(0, finalCount);
   }
 
-  // VALIDAZIONE PER COMANDO MANUALE
   if (mentions.length < 4 || mentions.length > 15) {
-    let helpText = `🔞 *BENVENUTO NELLE CRONACHE DELL'ORGIA* 🔞\n\n`;
-    helpText += `Per il massacro manuale, tagga da *4 a 15 persone*.\n\n`;
-    helpText += `🎲 *MODALITÀ CASUALE:* Digita *.orgiacasuale* e sceglierò io da 4 a 15 vittime tra i presenti!\n\n`;
-    helpText += `👉 *Esempio:* .orgia @utente1 @utente2 @utente3 @utente4`;
-    
-    return conn.sendMessage(m.chat, { text: helpText }, { quoted: m });
+    return conn.sendMessage(m.chat, { text: `🔞 *L'ARENA DELLA CARNE* 🔞\n\nTagga da 4 a 15 vittime o usa *.orgiacasuale* per scatenare l'inferno.` }, { quoted: m });
   }
 
   const tag = (jid) => `@${jid.split('@')[0]}`;
-  
-  // Mescolamento e selezione "eroe del dolore"
   let p = mentions.sort(() => Math.random() - 0.5).map(tag); 
   let sufferer = p[Math.floor(Math.random() * p.length)]; 
-  
   let story = "";
   const count = mentions.length;
 
-  // Racconti dinamici (Da 4 a 15)
   switch (count) {
     case 4:
-      story = `🔥 ${p[0]} blocca ferocemente le spalle di ${p[1]} mentre ${p[2]} lo sfonda con una foga animalesca; nel frattempo ${p[3]} si avventa su entrambi inondando i loro corpi di sborra e bava, in un groviglio di membra senza respiro.`;
+      story = `🔥 ${p[0]} afferra ${p[1]} per i capelli e lo sbatte senza sosta, mentre ${p[1]} grida: *"Sbattetemi più forte!"*. Nel frattempo ${p[2]} e ${p[3]} si scambiano bava e morsi, pronti a inondare ogni centimetro di pelle di seme bollente.`;
       break;
     case 5:
-      story = `🔞 ${p[0]} e ${p[1]} tengono spalancato ${p[2]} esponendo ogni suo buco, mentre ${p[3]} lo penetra senza alcuna pietà; ${p[4]} osserva la scena eccitato prima di unirsi al massacro spingendo il suo seme caldo nelle loro gole.`;
+      story = `🔞 ${p[0]} e ${p[1]} spalancano ${p[2]} esponendo la sua carne tremante a ${p[3]}, che lo sventra con una foga disumana. ${p[4]} osserva il delirio prima di soffocare ${p[2]} con una scarica di sperma densa, mentre le urla di piacere squarciano il silenzio.`;
       break;
     case 6:
-      story = `⛓️ Assalto totale: ${p[0]} domina brutalmente ${p[1]}, mentre ${p[2]} e ${p[3]} si incastrano in un treno di carne che travolge ${p[4]} con spinte sorde; ${p[5]} chiude il cerchio marchiando tutti con il suo sperma bollente.`;
+      story = `⛓️ CAOS TOTALE: ${p[0]} strozza ${p[1]} mentre ${p[2]} lo possiede brutalmente da dietro. ${p[3]} implora ${p[4]} di caricarlo ancora più forte, mentre ${p[5]} sigilla l'orgia marchiando tutti con spruzzi violenti e caldi.`;
       break;
     case 7:
-      story = `🤤 ${p[0]}, ${p[1]} e ${p[2]} formano un triangolo di sesso violento sopra ${p[3]}, mentre ${p[4]} e ${p[5]} si occupano di sfasciare ogni orifizio di ${p[6]} in un'esplosione di gemiti e fluidi che allaga tutto.`;
+      story = `🤤 ${p[0]}, ${p[1]} e ${p[2]} formano un cerchio di lussuria attorno a ${p[3]}, che geme: *"Voglio la sborra di tutti!"*. ${p[4]} e ${p[5]} lo accontentano sventrandolo a turno, mentre ${p[6]} annega la loro dignità sotto litri di bava e siero.`;
       break;
     case 8:
-      story = `🔞 ${p[0]} e ${p[1]} guidano l'assalto coordinato su ${p[2]} e ${p[3]}, mentre ${p[4]}, ${p[5]}, ${p[6]} e ${p[7]} si scambiano colpi e sborrate violente sul viso, creando un vortice di depravazione assoluta.`;
+      story = `🔞 ${p[0]} viene usato come un trofeo da ${p[1]} e ${p[2]}, mentre ${p[3]} artiglia ${p[4]} in un treno di carne che vibra sotto i colpi di ${p[5]} e ${p[6]}. ${p[7]} chiude il massacro eiaculando con violenza su ogni volto presente.`;
       break;
     case 9:
-      story = `🌊 Nove corpi nel delirio: ${p[0]} strozza ${p[1]} dal piacere estremo, ${p[2]} penetra ${p[3]} con cattiveria inaudita, mentre ${p[4]}, ${p[5]}, ${p[6]}, ${p[7]} e ${p[8]} si ammassano in una pioggia di sperma collettiva.`;
+      story = `🌊 Nove corpi fusi nel peccato: ${p[0]} urla dal piacere estremo mentre ${p[1]}, ${p[2]} e ${p[3]} lo riempiono fino all'orlo. ${p[4]} morde le natiche di ${p[5]} mentre ${p[6]}, ${p[7]} e ${p[8]} inondano la stanza di fluido seminale denso e appiccicoso.`;
       break;
     case 10:
-      story = `🫦 La carne sbatte: ${p[0]} e ${p[1]} aprono la strada alla lussuria per ${p[2]} e ${p[3]}, mentre l'intero gruppo composto da ${p[4]}, ${p[5]}, ${p[6]}, ${p[7]}, ${p[8]} e ${p[9]} si fonde in un immenso ammasso di bava e umiliazione.`;
+      story = `🫦 L'INFERNO: ${p[0]} grida: *"Non fermatevi, distruggetemi!"* mentre ${p[1]}, ${p[2]} e ${p[3]} lo sfondano all'unisono. ${p[4]} e ${p[5]} si intrecciano con ${p[6]}, mentre il resto del branco (${p[7]}, ${p[8]}, ${p[9]}) scarica sborra bollente sui loro petti sudati.`;
       break;
     case 11:
-      story = `🔥 Undici peccatori: ${p[0]} viene usato da ${p[1]} e ${p[2]}, mentre ${p[3]}, ${p[4]} e ${p[5]} si accaniscono selvaggiamente su ${p[6]}. Il resto del branco (${p[7]}, ${p[8]}, ${p[9]}, ${p[10]}) annega ogni dignità sotto litri di seme denso.`;
+      story = `🔥 ${p[0]} viene schiacciato dal peso di ${p[1]} e ${p[2]}, mentre ${p[3]} lo penetra con una cattiveria inaudita. ${p[4]}, ${p[5]} e ${p[6]} formano una catena di bava e sesso, mentre ${p.slice(7).join(', ')} sigillano l'orgia con una pioggia di sperma accecante.`;
       break;
     case 12:
-      story = `🔞 Apocalisse di lussuria: ${p[0]} e ${p[1]} dirigono i movimenti, mentre ${p[2]}, ${p[3]}, ${p[4]}, ${p[5]}, ${p[6]}, ${p[7]}, ${p[8]}, ${p[9]}, ${p[10]} e ${p[11]} si intrecciano in posizioni impossibili sventrando ogni buco residuo.`;
+      story = `🔞 APOCALISSE DELLA CARNE: ${p[0]} geme disperato sotto i colpi di ${p[1]}, implorando pietà, ma ${p[2]} e ${p[3]} lo incastrano ancora più a fondo. ${p.slice(4, 9).join(', ')} creano un groviglio di membra, mentre ${p.slice(9).join(', ')} sommergono tutto con eiaculazioni di massa.`;
       break;
     case 13:
-      story = `⛓️ Tredici ombre nel peccato: ${p[0]}, ${p[1]} e ${p[2]} guidano la carica, seguiti da ${p[3]}, ${p[4]}, ${p[5]}, ${p[6]}, ${p[7]}, ${p[8]}, ${p[9]}, ${p[10]}, ${p[11]} e ${p[12]} che si svuotano l'uno dentro l'altro in una catena di bava e sperma.`;
+      story = `⛓️ Tredici peccatori senza legge: ${p[0]} viene posseduto da ${p[1]} e ${p[2]}, mentre ${p[3]} e ${p[4]} lo obbligano a ingoiare il loro seme. Intorno, ${p.slice(5, 10).join(', ')} si massacrano di lussuria, mentre ${p.slice(10).join(', ')} riducono il gruppo a un ammasso di bava e sperma.`;
       break;
     case 14:
-      story = `🤤 Quattordici demoni: ${p[0]} urla mentre ${p[1]} lo possiede con violenza, ${p.slice(2, 8).join(', ')} creano una mischia di corpi pulsanti e ${p.slice(8).join(', ')} sommergono tutti con un'eiaculazione di massa.`;
+      story = `🤤 IL BRANCO ASSATANATO: ${p[0]} urla: *"Voglio sentirvi tutti dentro!"* e ${p.slice(1, 6).join(', ')} lo sventrano senza pietà. Nel caos, ${p.slice(6, 11).join(', ')} si scambiano colpi brutali e ${p.slice(11).join(', ')} chiudono il rito con una scarica di sborra leggendaria.`;
       break;
     case 15:
-      story = `🔞 MASSACRO TOTALE: Quindici corpi in fiamme. ${p.slice(0, 5).join(', ')} distruggono ogni limite su ${p.slice(5, 10).join(', ')}, mentre i restanti ${p.slice(10).join(', ')} sigillano l'orgia con una scarica di sperma assoluta.`;
+      story = `🔞 MASSACRO TOTALE: Quindici corpi in fiamme. ${p[0]} sviene dal piacere mentre ${p.slice(1, 6).join(', ')} lo sbranano. ${p.slice(6, 11).join(', ')} urlano in preda a un'estasi violenta, mentre gli ultimi ${p.slice(11).join(', ')} inondano il pavimento e i corpi di litri di sborra bollente.`;
       break;
   }
 
   let responseText = `🔞 *CRONACHE DELL'ESTASI COLLETTIVA* 🔞\n`;
-  if (command.includes('casuale')) responseText += `🎲 _Modalità Casuale: ${count} partecipanti estratti_\n\n`;
-  
+  if (command.includes('casuale')) responseText += `🎲 _Modalità Casuale: ${count} corpi estratti dal branco_\n\n`;
   responseText += `${story}\n\n`;
   responseText += `───────────────\n`;
-  responseText += `🏆 *IL PREMIO "CARNE TRITA" DELLA SERATA:* ${sufferer}\n`;
-  responseText += `*(Dopo essere stato usato e riempito da tutti, è ufficialmente quello che ha sofferto di più per il piacere del gruppo)* 💦💀`;
+  responseText += `🏆 *LA CARNE TRITA DELLA SERATA:* ${sufferer}\n`;
+  responseText += `*(Dopo aver incassato ogni colpo, aver implorato per averne ancora e aver ospitato il seme di tutti, è ufficialmente ridotto a un contenitore di fluidi esausto)* 💦💀`;
 
-  await conn.sendMessage(m.chat, {
-    text: responseText,
-    mentions: mentions
-  }, { quoted: m });
+  await conn.sendMessage(m.chat, { text: responseText, mentions: mentions }, { quoted: m });
 };
 
 handler.help = ['orgia', 'orgiacasuale'];
@@ -98,4 +73,3 @@ handler.tags = ['giochi'];
 handler.command = /^(orgia|orgiacasuale|orgiarandom)$/i;
 
 export default handler;
- 
