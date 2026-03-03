@@ -1,3 +1,5 @@
+// Plugin fatto da deadly
+
 const handler = async (m, { conn, args, usedPrefix, command }) => {
   if (!m.isGroup) {
     return m.reply('⚠️ Le fiamme ardono solo nei gruppi!');
