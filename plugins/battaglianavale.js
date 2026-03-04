@@ -11,8 +11,7 @@ let handler = async (m, { conn, text, command, usedPrefix }) => {
         if (global.navale[chat]) return m.reply('*⚠️ Partita in corso. Usa .endgame per chiuderla.*')
         let target = m.mentionedJid[0] || (m.quoted ? m.quoted.sender : null)
         if (!target) return m.reply('*Devi menzionare l\'avversario!*')
-        if (target === user) return m.reply('*Non puoi sfidare te stesso.*')
-
+        
         global.navale[chat] = {
             p1: user,
             p2: target,
@@ -32,11 +31,7 @@ let handler = async (m, { conn, text, command, usedPrefix }) => {
         return conn.sendMessage(chat, { text: intro, buttons, mentions: [user, target] }, { quoted: m })
     }
 
-    // --- 2. ACCETTA / RIFIUTA / END ---
-    if (command === 'endgame') {
-        delete global.navale[chat]
-        return m.reply('*🏁 Battaglia terminata.*')
-    }
+    if (command === 'endgame') { delete global.navale[chat]; return m.reply('*🏁 Partita terminata.*') }
 
     if (command === 'accetta') {
         let game = global.navale[chat]
@@ -45,7 +40,7 @@ let handler = async (m, { conn, text, command, usedPrefix }) => {
         return m.reply(`*🚢 PARTITA INIZIATA!*\nTurno di @${game.p1.split('@')[0]}\nUsa: *.fuoco A1*`, null, { mentions: [game.p1] })
     }
 
-    // --- 3. LOGICA DI FUOCO CON CANVAS ---
+    // --- 2. LOGICA DI FUOCO CON GRAFICA CERTA (Senza Emoji nel Canvas) ---
     if (command === 'fuoco') {
         let game = global.navale[chat]
         if (!game || game.status !== 'PLAYING') return m.reply('*Nessuna partita attiva.*')
@@ -64,52 +59,53 @@ let handler = async (m, { conn, text, command, usedPrefix }) => {
         let isHit = opponentBoard.includes(coord)
         let win = opponentBoard.every(ship => hits.includes(ship))
 
-        // CREAZIONE IMMAGINE CANVAS
-        const canvas = createCanvas(500, 500)
+        // DISEGNO CANVAS
+        const canvas = createCanvas(500, 550)
         const ctx = canvas.getContext('2d')
 
-        // Sfondo Mare
-        ctx.fillStyle = '#006994'; ctx.fillRect(0, 0, 500, 500)
+        // Sfondo Mare (Blu scuro)
+        ctx.fillStyle = '#003366'; ctx.fillRect(0, 0, 500, 550)
         
-        // Disegno Griglia
-        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2
+        // Griglia Bianca
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3
         for (let i = 0; i <= 5; i++) {
-            ctx.beginPath(); ctx.moveTo(50 + i * 90, 50); ctx.lineTo(50 + i * 90, 500); ctx.stroke() // Verticali
-            ctx.beginPath(); ctx.moveTo(50, 50 + i * 90); ctx.lineTo(500, 50 + i * 90); ctx.stroke() // Orizzontali
+            ctx.beginPath(); ctx.moveTo(70 + i * 80, 70); ctx.lineTo(70 + i * 80, 470); ctx.stroke() // Verticali
+            ctx.beginPath(); ctx.moveTo(70, 70 + i * 80); ctx.lineTo(470, 70 + i * 80); ctx.stroke() // Orizzontali
         }
 
-        // Numeri e Lettere
-        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 30px Sans'; ctx.textAlign = 'center'
+        // Coordinate (Testo)
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 35px Arial'; ctx.textAlign = 'center'
         let letters = ['A', 'B', 'C', 'D', 'E']
         for (let i = 0; i < 5; i++) {
-            ctx.fillText(i + 1, 95 + i * 90, 35) // 1 2 3 4 5
-            ctx.fillText(letters[i], 25, 105 + i * 90) // A B C D E
+            ctx.fillText(i + 1, 110 + i * 80, 50) // Numeri
+            ctx.fillText(letters[i], 35, 125 + i * 80) // Lettere
         }
 
-        // Disegno i Colpi
+        // DISEGNO I COLPI (Sostituite Emoji con forme geometriche)
         letters.forEach((l, row) => {
             for (let col = 1; col <= 5; col++) {
                 let currentCoord = l + col
                 if (hits.includes(currentCoord)) {
-                    let x = 95 + (col - 1) * 90
-                    let y = 100 + row * 90
+                    let x = 110 + (col - 1) * 80
+                    let y = 115 + row * 80
+                    
                     if (opponentBoard.includes(currentCoord)) {
-                        // COLPITO (Esplosione rossa)
-                        ctx.fillStyle = '#ff4d4d'; ctx.beginPath(); ctx.arc(x, y, 30, 0, Math.PI * 2); ctx.fill()
-                        ctx.fillStyle = '#ffffff'; ctx.font = '40px Sans'; ctx.fillText('💥', x, y + 15)
+                        // COLPITO: Un cerchio rosso con una X bianca
+                        ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(x, y, 30, 0, Math.PI * 2); ctx.fill()
+                        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 5; ctx.beginPath()
+                        ctx.moveTo(x-15, y-15); ctx.lineTo(x+15, y+15); ctx.moveTo(x+15, y-15); ctx.lineTo(x-15, y+15); ctx.stroke()
                     } else {
-                        // ACQUA (Cerchio azzurro)
-                        ctx.strokeStyle = '#80d4ff'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(x, y, 20, 0, Math.PI * 2); ctx.stroke()
-                        ctx.fillStyle = '#80d4ff'; ctx.font = '30px Sans'; ctx.fillText('💧', x, y + 10)
+                        // ACQUA: Un cerchio azzurro vuoto
+                        ctx.strokeStyle = '#00ccff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y, 20, 0, Math.PI * 2); ctx.stroke()
+                        ctx.fillStyle = '#00ccff'; ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill()
                     }
                 }
             }
         })
 
         if (win) {
-            let vincitore = user
-            delete global.navale[chat]
-            return conn.sendMessage(m.chat, { image: canvas.toBuffer(), caption: `*💥 VITTORIA TOTALE!* 🏆\n\n@${vincitore.split('@')[0]} ha affondato l'ultima nave!`, mentions: [vincitore] }, { quoted: m })
+            let vincitore = user; delete global.navale[chat]
+            return conn.sendMessage(m.chat, { image: canvas.toBuffer(), caption: `*💥 VITTORIA! TUTTE LE NAVI NEMICHE AFFONDATE!* 🏆\n\nComplimenti @${vincitore.split('@')[0]}!`, mentions: [vincitore] }, { quoted: m })
         }
 
         game.turno = isP1 ? game.p2 : game.p1
@@ -117,15 +113,14 @@ let handler = async (m, { conn, text, command, usedPrefix }) => {
         
         return conn.sendMessage(m.chat, { 
             image: canvas.toBuffer(), 
-            caption: `${esito}\n\n*Coordinate:* ${coord}\n*Prossimo turno:* @${game.turno.split('@')[0]}`, 
+            caption: `${esito}\n\n*Mossa:* ${coord}\n*Turno di:* @${game.turno.split('@')[0]}`, 
             mentions: [game.turno] 
         }, { quoted: m })
     }
 }
 
 function generateBoard() {
-    let coords = []
-    let letters = ['A', 'B', 'C', 'D', 'E']
+    let coords = [], letters = ['A', 'B', 'C', 'D', 'E']
     while (coords.length < 3) {
         let c = letters[Math.floor(Math.random() * 5)] + (Math.floor(Math.random() * 5) + 1)
         if (!coords.includes(c)) coords.push(c)
