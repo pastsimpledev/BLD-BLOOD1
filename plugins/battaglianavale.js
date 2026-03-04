@@ -1,15 +1,15 @@
 global.navale = global.navale || {}
 
-let handler = async (m, { conn, text, command }) => {
+let handler = async (m, { conn, text, command, usedPrefix }) => {
     let chat = m.chat
     let user = m.sender
 
     // --- COMANDO INIZIALE: .battaglia @user ---
     if (command === 'battaglia') {
-        if (global.navale[chat]) return m.reply('*⚠️ C\'è già una sfida in sospeso o una partita in corso. Usa .endgame per forzare la chiusura.*')
-        
+        if (global.navale[chat]) return m.reply('*⚠️ Partita in corso. Usa .endgame per chiuderla.*')
+
         let target = m.mentionedJid[0] || (m.quoted ? m.quoted.sender : null)
-        if (!target) return m.reply('*Devi menzionare l\'avversario che desideri sfidare!*')
+        if (!target) return m.reply('*Devi menzionare l\'avversario!*')
         if (target === user) return m.reply('*Non puoi sfidare te stesso.*')
 
         global.navale[chat] = {
@@ -19,77 +19,63 @@ let handler = async (m, { conn, text, command }) => {
             turno: user,
             board1: generateBoard(),
             board2: generateBoard(),
-            hits1: [],
-            hits2: []
+            hits1: [], // Colpi ricevuti da P1
+            hits2: []  // Colpi ricevuti da P2
         }
 
-        let intro = `*⚓ BATTAGLIA NAVALE: SFIDA LANCIATA! ⚓*\n`
-        intro += `──────────────────────\n`
+        let intro = `*⚓ BATTAGLIA NAVALE ⚓*\n\n`
         intro += `*SFIDANTE:* @${user.split('@')[0]}\n`
         intro += `*AVVERSARIO:* @${target.split('@')[0]}\n\n`
-        intro += `*📜 REGOLE:*\n`
-        intro += `*1.* Griglia di gioco *5x5*.\n`
-        intro += `*2.* Ogni flotta ha *3 Navi* [ 🚢 ].\n`
-        intro += `*3.* Si attacca col comando *.fuoco [coordinate]* (es: .fuoco A1).\n\n`
-        intro += `*@${target.split('@')[0]}, accetti la sfida?*`
+        intro += `*📜 REGOLE:*\n- Griglia *5x5*\n- *3 Navi* nascoste\n- Comando: *.fuoco A1*\n\n*@${target.split('@')[0]}, accetti?*`
 
         const buttons = [
-            { buttonId: `.accetta`, buttonText: { displayText: 'ACCETTA ✅' }, type: 1 },
-            { buttonId: `.rifiuta`, buttonText: { displayText: 'RIFIUTA ❌' }, type: 1 }
+            { buttonId: `${usedPrefix}accetta`, buttonText: { displayText: 'ACCETTA ✅' }, type: 1 },
+            { buttonId: `${usedPrefix}rifiuta`, buttonText: { displayText: 'RIFIUTA ❌' }, type: 1 }
         ]
 
-        const buttonMessage = {
-            text: intro,
-            footer: 'Usa .endgame per annullare in qualsiasi momento',
-            buttons: buttons,
-            headerType: 1,
-            mentions: [user, target]
-        }
-
-        return conn.sendMessage(chat, buttonMessage, { quoted: m })
+        return conn.sendMessage(chat, { text: intro, buttons, mentions: [user, target] }, { quoted: m })
     }
 
-    // --- COMANDO PER TERMINARE LA PARTITA: .endgame ---
+    // --- FINE PARTITA ---
     if (command === 'endgame' || command === 'fine') {
-        if (!global.navale[chat]) return m.reply('*Non ci sono partite attive da terminare.*')
+        if (!global.navale[chat]) return m.reply('*Nessuna partita attiva.*')
         delete global.navale[chat]
-        return m.reply('*🏁 La partita è stata terminata forzatamente. La chat è ora libera.*')
+        return m.reply('*🏁 Partita terminata.*')
     }
 
-    // --- LOGICA ACCETTA ---
+    // --- ACCETTA ---
     if (command === 'accetta') {
         let game = global.navale[chat]
         if (!game || game.status !== 'WAITING') return
-        if (user !== game.p2) return m.reply('*Solo l\'utente sfidato può accettare la partita.*')
+        if (user !== game.p2) return m.reply('*Non sei tu lo sfidato!*')
 
         game.status = 'PLAYING'
-        return conn.reply(chat, `*🚢 PARTITA INIZIATA!*\n\n*Inizia @${game.p1.split('@')[0]}*\nUsa il comando *.fuoco [A-E][1-5]*`, m, { mentions: [game.p1] })
+        return conn.reply(chat, `*🚢 PARTITA INIZIATA!*\n\n*Turno di:* @${game.p1.split('@')[0]}\nUsa *.fuoco [A-E][1-5]*`, m, { mentions: [game.p1] })
     }
 
-    // --- LOGICA RIFIUTA ---
+    // --- RIFIUTA ---
     if (command === 'rifiuta') {
         let game = global.navale[chat]
         if (!game || game.status !== 'WAITING') return
-        if (user !== game.p2) return m.reply('*Non puoi rifiutare una sfida non diretta a te.*')
-
+        if (user !== game.p2) return
         delete global.navale[chat]
-        return conn.reply(chat, `*SFIDA ANNULLATA! @${user.split('@')[0]} ha rifiutato.*`, m, { mentions: [user] })
+        return m.reply('*Sfida rifiutata.*')
     }
 
-    // --- COMANDO DI ATTACCO: .fuoco ---
+    // --- FUOCO ---
     if (command === 'fuoco') {
         let game = global.navale[chat]
-        if (!game || game.status !== 'PLAYING') return m.reply('*Nessuna battaglia attiva.*')
-        if (user !== game.turno) return m.reply('*Non è il tuo turno!*')
+        if (!game || game.status !== 'PLAYING') return m.reply('*Nessuna partita attiva.*')
+        if (user !== game.turno) return m.reply(`*Non è il tuo turno! Aspetta @${game.turno.split('@')[0]}*`, null, { mentions: [game.turno] })
 
         let coord = text.toUpperCase().trim()
-        if (!/^[A-E][1-5]$/.test(coord)) return m.reply('*Coordinate errate! Inserisci un valore da A1 a E5.*')
+        if (!/^[A-E][1-5]$/.test(coord)) return m.reply('*Esempio: .fuoco B2*')
 
         let isP1 = user === game.p1
         let opponentBoard = isP1 ? game.board2 : game.board1
-        let hits = isP1 ? game.hits2 : game.hits1
+        let hits = isP1 ? game.hits2 : game.hits1 // Registro i colpi che P1 dà a P2
 
-        if (hits.includes(coord)) return m.reply('*Hai già colpito questa posizione!*')
+        if (hits.includes(coord)) return m.reply('*Hai già sparato qui!*')
         hits.push(coord)
 
         let isHit = opponentBoard.includes(coord)
@@ -98,17 +84,19 @@ let handler = async (m, { conn, text, command }) => {
         if (win) {
             let vincitore = user
             delete global.navale[chat]
-            return conn.reply(chat, `*💥 VITTORIA! TUTTE LE NAVI NEMICHE SONO STATE AFFONDATE!* \n\n*Vincitore:* @${vincitore.split('@')[0]} 🏆`, m, { mentions: [vincitore] })
+            return conn.reply(chat, `*💥 AFFONDATO E VINTO!* 🏆\n\n@${vincitore.split('@')[0]} ha distrutto la flotta nemica!`, m, { mentions: [vincitore] })
         }
 
+        // Cambio turno
         game.turno = isP1 ? game.p2 : game.p1
-        let esito = isHit ? `*🔥 COLPITO!*` : `*💦 ACQUA!*`
+        let esito = isHit ? `*🔥 COLPITO!*` : `*💦 ACQUA...*`
         let grid = renderGrid(hits, opponentBoard)
-        
-        return conn.reply(chat, `${esito}\n\n${grid}\n*Prossimo turno: @${game.turno.split('@')[0]}*`, m, { mentions: [game.turno] })
+
+        return conn.reply(chat, `${esito}\n\n${grid}\n*Prossimo turno:* @${game.turno.split('@')[0]}`, m, { mentions: [game.turno] })
     }
 }
 
+// Genera 3 posizioni casuali
 function generateBoard() {
     let coords = []
     let letters = ['A', 'B', 'C', 'D', 'E']
@@ -119,11 +107,12 @@ function generateBoard() {
     return coords
 }
 
+// Disegna la griglia
 function renderGrid(hits, ships) {
     let letters = ['A', 'B', 'C', 'D', 'E']
-    let grid = '    1   2   3   4   5\n'
+    let grid = '      1    2    3    4    5\n'
     for (let l of letters) {
-        grid += l + ' '
+        grid += l + '  '
         for (let i = 1; i <= 5; i++) {
             let c = l + i
             if (hits.includes(c)) {
@@ -137,6 +126,9 @@ function renderGrid(hits, ships) {
     return '```' + grid + '```'
 }
 
+handler.help = ['battaglia']
+handler.tags = ['giochi']
 handler.command = /^(battaglia|accetta|rifiuta|fuoco|endgame|fine)$/i
 handler.group = true
+
 export default handler
