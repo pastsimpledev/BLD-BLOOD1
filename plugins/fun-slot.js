@@ -141,6 +141,11 @@ let handler = async (m, { conn, command, args, usedPrefix }) => {
     }
 }
 
+handler.help = ['casino']
+handler.tags = ['giochi']
+
 handler.command = /^(casino|infoslot|infobj|infogratta|inforoulette|inforigore|infocorsa|slot|blackjack|blakjak|gratta|playroulette|rigore|puntacorsa)$/i
+
 handler.group = true
+
 export default handler
