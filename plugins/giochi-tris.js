@@ -1,4 +1,6 @@
-let games = {}; 
+import { createCanvas } from 'canvas'
+
+let games = {};
 
 let handler = async (m, { conn, usedPrefix, command, text }) => {
     const chatId = m.chat;
@@ -6,9 +8,7 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
     // FUNZIONE PER OTTENERE IL NUMERO DI TELEFONO
     const getPhoneNumber = (jid) => {
         if (!jid) return '';
-        // Prende tutto prima di @ e poi solo numeri
-        const user = jid.split('@')[0];
-        return user.replace(/\D/g, '');
+        return jid.split('@')[0].replace(/\D/g, '');
     };
 
     // ===== START (.tris) =====
@@ -16,33 +16,25 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
         let mention = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : (m.quoted ? m.quoted.sender : null);
 
         if (!mention) 
-            return conn.sendMessage(chatId, { text: `⚠️ Devi menzionare qualcuno o rispondere a un suo messaggio!\nEsempio: ${usedPrefix}tris @utente` }, { quoted: m });
+            return m.reply(`⚠️ Devi menzionare qualcuno!\nEsempio: ${usedPrefix}tris @utente`);
 
         const myNumber = getPhoneNumber(m.sender);
         const theirNumber = getPhoneNumber(mention);
 
-        if (myNumber === theirNumber)
-            return conn.sendMessage(chatId, { text: '❌ Non puoi giocare contro te stesso!' }, { quoted: m });
+        if (myNumber === theirNumber) return m.reply('❌ Non puoi giocare da solo!');
+        if (games[chatId]) return m.reply('❌ Partita già in corso!');
 
-        if (games[chatId])
-            return conn.sendMessage(chatId, { text: '❌ C\'è già una partita in corso in questa chat!' }, { quoted: m });
-
-        // Memorizza i numeri e gli JID completi
         games[chatId] = {
-            board: [['A1','A2','A3'],['B1','B2','B3'],['C1','C2','C3']],
-            players: [myNumber, theirNumber], // Numeri di telefono
-            jids: [m.sender, mention], // JID completi per le menzioni
+            board: [['','',''],['','',''],['','','']],
+            players: [myNumber, theirNumber],
+            jids: [m.sender, mention],
             turn: 0,
             timer: null,
-            symbols: ['❌', '⭕']
+            symbols: ['X', 'O']
         };
 
-        await sendBoard(chatId, conn, games[chatId], 
-            `🎮 *TRIS - PARTITA INIZIATA!*\n\n` +
-            `❌ Giocatore 1: @${games[chatId].jids[0].split('@')[0]}\n` +
-            `⭕ Giocatore 2: @${games[chatId].jids[1].split('@')[0]}\n\n` +
-            `▶️ Tocca a: @${games[chatId].jids[0].split('@')[0]}\n` +
-            `📝 Scrivi: \`${usedPrefix}putris A1\` (o B2, C3, ecc.)`
+        await sendCanvasBoard(chatId, conn, games[chatId], 
+            `🎮 *TRIS HD INIZIATO!*\n\n❌: @${games[chatId].jids[0].split('@')[0]}\n⭕: @${games[chatId].jids[1].split('@')[0]}\n\n▶️ Tocca a: @${games[chatId].jids[0].split('@')[0]}`
         );
         startTurnTimer(chatId, conn);
     }
@@ -50,26 +42,11 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
     // ===== MOVE (.putris) =====
     else if (command === 'putris') {
         const game = games[chatId];
-        if (!game) return conn.sendMessage(chatId, { text: '❌ Nessuna partita attiva. Iniziane una con .tris' }, { quoted: m });
+        if (!game) return m.reply('❌ Nessuna partita attiva.');
 
         const myNumber = getPhoneNumber(m.sender);
-        const currentNumber = game.players[game.turn];
-
-        // DEBUG: Stampa informazioni
-        console.log('=== DEBUG TRIS ===');
-        console.log('Mio numero:', myNumber);
-        console.log('Numero turno:', currentNumber);
-        console.log('Turno attuale:', game.turn);
-        console.log('Sono uguali?', myNumber === currentNumber);
-        console.log('=================');
-
-        // Confronta SOLO i numeri di telefono
-        if (myNumber !== currentNumber) {
-            const currentPlayerJid = game.jids[game.turn];
-            return conn.sendMessage(chatId, { 
-                text: `❌ *NON È IL TUO TURNO!*\n\nDeve muovere: @${currentPlayerJid.split('@')[0]}\nSimbolo: ${game.symbols[game.turn]}`,
-                mentions: [currentPlayerJid]
-            }, { quoted: m });
+        if (myNumber !== game.players[game.turn]) {
+            return conn.reply(chatId, `❌ Non è il tuo turno! Aspetta @${game.jids[game.turn].split('@')[0]}`, m, { mentions: [game.jids[game.turn]] });
         }
 
         const move = text.trim().toUpperCase();
@@ -78,171 +55,128 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
         const col = parseInt(move[1]) - 1;
 
         if (row === undefined || isNaN(col) || col < 0 || col > 2)
-            return conn.sendMessage(chatId, { 
-                text: `⚠️ *MOSSA NON VALIDA!*\n\nUsa una mossa come:\n\`${usedPrefix}putris A1\`\n\`${usedPrefix}putris B2\`\n\`${usedPrefix}putris C3\`\n\n📋 Celle disponibili: A1, A2, A3, B1, B2, B3, C1, C2, C3` 
-            }, { quoted: m });
+            return m.reply(`⚠️ Mossa errata! Usa: \`${usedPrefix}putris B2\``);
 
-        if (['❌','⭕'].includes(game.board[row][col]))
-            return conn.sendMessage(chatId, { text: '❌ Casella già occupata! Scegline un\'altra.' }, { quoted: m });
+        if (game.board[row][col] !== '')
+            return m.reply('❌ Casella occupata!');
 
-        // Fai la mossa
         game.board[row][col] = game.symbols[game.turn];
 
-        // Controlla vittoria
         if (checkWinner(game.board)) {
             clearTimeout(game.timer);
-            await sendBoard(chatId, conn, game, 
-                `🎉 *VITTORIA!*\n\n@${m.sender.split('@')[0]} ha vinto la partita!\nSimbolo: ${game.symbols[game.turn]}`
-            );
+            await sendCanvasBoard(chatId, conn, game, `🎉 *VITTORIA!* \n@${m.sender.split('@')[0]} ha vinto!`);
             delete games[chatId];
         } 
-        // Controlla pareggio
-        else if (game.board.flat().every(cell => ['❌','⭕'].includes(cell))) {
+        else if (game.board.flat().every(cell => cell !== '')) {
             clearTimeout(game.timer);
-            await sendBoard(chatId, conn, game, 
-                `🤝 *PAREGGIO!*\n\nLa griglia è piena, nessun vincitore.`
-            );
+            await sendCanvasBoard(chatId, conn, game, `🤝 *PAREGGIO!*`);
             delete games[chatId];
         } 
-        // Cambia turno
         else {
-            game.turn = 1 - game.turn; // Alterna tra 0 e 1
-            const nextPlayerJid = game.jids[game.turn];
-            const nextSymbol = game.symbols[game.turn];
-
-            await sendBoard(chatId, conn, game, 
-                `✅ *MOSSA EFFETTUATA!*\n\n` +
-                `▶️ Prossimo turno: @${nextPlayerJid.split('@')[0]}\n` +
-                `🎯 Simbolo: ${nextSymbol}\n` +
-                `📝 Scrivi: \`${usedPrefix}putris [casella]\``
-            );
+            game.turn = 1 - game.turn;
+            await sendCanvasBoard(chatId, conn, game, `✅ Mossa fatta! Turno di: @${game.jids[game.turn].split('@')[0]}`);
             startTurnTimer(chatId, conn);
         }
     }
 
-    // ===== END (.endtris) =====
+    // ===== END/HELP =====
     else if (command === 'endtris') {
         if (games[chatId]) {
             clearTimeout(games[chatId].timer);
-            const players = games[chatId].jids;
             delete games[chatId];
-            await conn.sendMessage(chatId, { 
-                text: '🛑 La partita è stata annullata.',
-                mentions: players
-            });
-        } else {
-            await conn.sendMessage(chatId, { text: '❌ Non c\'è nessuna partita attiva in questa chat.' });
+            m.reply('🛑 Partita annullata.');
         }
-    }
-
-    // ===== HELP (.trishelp) =====
-    else if (command === 'trishelp' || command === 'trishelp') {
-        await conn.sendMessage(chatId, {
-            text: `🎮 *GUIDA AL GIOCO DEL TRIS*\n\n` +
-                  `*Comandi:*\n` +
-                  `\`${usedPrefix}tris @utente\` - Inizia una partita\n` +
-                  `\`${usedPrefix}putris A1\` - Metti il tuo simbolo (A1, B2, C3, ecc.)\n` +
-                  `\`${usedPrefix}endtris\` - Termina la partita corrente\n\n` +
-                  `*Come giocare:*\n` +
-                  `1. Inizia una partita menzionando un amico\n` +
-                  `2. A turno, usate \`${usedPrefix}putris\` seguito da una cella\n` +
-                  `3. Vince chi fa 3 simboli in linea\n\n` +
-                  `📋 *Griglia:*\n` +
-                  `\`\`\`\n` +
-                  `    A1 │ A2 │ A3\n` +
-                  `   ───┼────┼───\n` +
-                  `    B1 │ B2 │ B3\n` +
-                  `   ───┼────┼───\n` +
-                  `    C1 │ C2 │ C3\n` +
-                  `\`\`\`\n\n` +
-                  `⏱️ Ogni turno ha 2 minuti di tempo!`
-        }, { quoted: m });
     }
 };
 
-// --- FUNZIONI UTILITY ---
+// --- FUNZIONE DISEGNO CANVAS ---
+async function sendCanvasBoard(chatId, conn, game, msg = '') {
+    const canvas = createCanvas(500, 500);
+    const ctx = canvas.getContext('2d');
 
-async function sendBoard(chatId, conn, game, msg = '') {
-    const s = (cell) => {
-        if (cell === '❌' || cell === '⭕') return cell;
-        return '⬜';
-    };
+    // Sfondo Dark Mode
+    ctx.fillStyle = '#1e1e2e';
+    ctx.fillRect(0, 0, 500, 500);
 
-    const boardStr = 
-        `      1️⃣   2️⃣   3️⃣\n` +
-        `   ┌────┬────┬────┐\n` +
-        `A  │ ${s(game.board[0][0])} │ ${s(game.board[0][1])} │ ${s(game.board[0][2])} │\n` +
-        `   ├────┼────┼────┤\n` +
-        `B  │ ${s(game.board[1][0])} │ ${s(game.board[1][1])} │ ${s(game.board[1][2])} │\n` +
-        `   ├────┼────┼────┤\n` +
-        `C  │ ${s(game.board[2][0])} │ ${s(game.board[2][1])} │ ${s(game.board[2][2])} │\n` +
-        `   └────┴────┴────┘`;
+    // Griglia (Neon Blue)
+    ctx.strokeStyle = '#89b4fa';
+    ctx.lineWidth = 8;
+    ctx.lineCap = 'round';
+
+    // Linee Verticali
+    ctx.beginPath(); ctx.moveTo(166, 50); ctx.lineTo(166, 450); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(333, 50); ctx.lineTo(333, 450); ctx.stroke();
+    // Linee Orizzontali
+    ctx.beginPath(); ctx.moveTo(50, 166); ctx.lineTo(450, 166); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(50, 333); ctx.lineTo(450, 333); ctx.stroke();
+
+    // Etichette (A, B, C / 1, 2, 3)
+    ctx.fillStyle = '#bac2de';
+    ctx.font = 'bold 25px Arial';
+    ctx.textAlign = 'center';
+    ['1', '2', '3'].forEach((n, i) => ctx.fillText(n, 108 + i * 166, 35));
+    ['A', 'B', 'C'].forEach((l, i) => ctx.fillText(l, 25, 115 + i * 166));
+
+    // Disegno Simboli
+    for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+            let symbol = game.board[r][c];
+            let x = 108 + c * 166;
+            let y = 115 + r * 166;
+
+            if (symbol === 'X') {
+                // Disegna X (Rossa)
+                ctx.strokeStyle = '#f38ba8';
+                ctx.lineWidth = 12;
+                ctx.beginPath();
+                ctx.moveTo(x - 40, y - 40); ctx.lineTo(x + 40, y + 40);
+                ctx.moveTo(x + 40, y - 40); ctx.lineTo(x - 40, y + 40);
+                ctx.stroke();
+            } else if (symbol === 'O') {
+                // Disegna O (Gialla)
+                ctx.strokeStyle = '#f9e2af';
+                ctx.lineWidth = 12;
+                ctx.beginPath();
+                ctx.arc(x, y, 45, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+    }
 
     await conn.sendMessage(chatId, { 
-        text: `${boardStr}\n\n${msg}`,
-        mentions: game.jids
+        image: canvas.toBuffer(), 
+        caption: msg,
+        mentions: game.jids 
     });
+}
+
+function checkWinner(board) {
+    const lines = [
+        // Orizzontali
+        [[0,0], [0,1], [0,2]], [[1,0], [1,1], [1,2]], [[2,0], [2,1], [2,2]],
+        // Verticali
+        [[0,0], [1,0], [2,0]], [[0,1], [1,1], [2,1]], [[0,2], [1,2], [2,2]],
+        // Diagonali
+        [[0,0], [1,1], [2,2]], [[0,2], [1,1], [2,0]]
+    ];
+    for (let line of lines) {
+        const [[r1,c1], [r2,c2], [r3,c3]] = line;
+        if (board[r1][c1] !== '' && board[r1][c1] === board[r2][c2] && board[r1][c1] === board[r3][c3]) return true;
+    }
+    return false;
 }
 
 function startTurnTimer(chatId, conn) {
     const game = games[chatId];
-    if (!game) return;
-
-    if (game.timer) clearTimeout(game.timer);
-
-    game.timer = setTimeout(async () => {
+    if (game?.timer) clearTimeout(game.timer);
+    game.timer = setTimeout(() => {
         if (games[chatId]) {
-            await conn.sendMessage(chatId, { 
-                text: `⏱️ *TEMPO SCADUTO!*\n\nLa partita è stata chiusa per inattività.`,
-                mentions: game.jids
-            });
+            conn.sendMessage(chatId, { text: '⏱️ Tempo scaduto! Partita chiusa.' });
             delete games[chatId];
         }
-    }, 120000); // 2 minuti
+    }, 120000);
 }
 
-function checkWinner(board) {
-    // Controlla righe
-    for (let i = 0; i < 3; i++) {
-        if (board[i][0] === board[i][1] && 
-            board[i][1] === board[i][2] && 
-            ['❌','⭕'].includes(board[i][0])) {
-            return true;
-        }
-    }
-
-    // Controlla colonne
-    for (let i = 0; i < 3; i++) {
-        if (board[0][i] === board[1][i] && 
-            board[1][i] === board[2][i] && 
-            ['❌','⭕'].includes(board[0][i])) {
-            return true;
-        }
-    }
-
-    // Controlla diagonale \
-    if (board[0][0] === board[1][1] && 
-        board[1][1] === board[2][2] && 
-        ['❌','⭕'].includes(board[0][0])) {
-        return true;
-    }
-
-    // Controlla diagonale /
-    if (board[0][2] === board[1][1] && 
-        board[1][1] === board[2][0] && 
-        ['❌','⭕'].includes(board[0][2])) {
-        return true;
-    }
-
-    return false;
-}
-
-// Registra i comandi
-handler.command = /^(tris|putris|endtris|trishelp)$/i;
-
-// Info per la help command globale
-handler.help = ['tris', 'putris', 'endtris'];
-handler.tags = ['game'];
-handler.description = 'Gioco del Tris multiplayer';
-
+handler.command = /^(tris|putris|endtris)$/i;
+handler.group = true;
 export default handler;
