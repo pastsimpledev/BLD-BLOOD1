@@ -1,133 +1,74 @@
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
-let richiestaInAttesa = {};
+var handler = async (m, { conn, isBotAdmin, isAdmin }) => {
+  if (!isAdmin) return 
+  if (!isBotAdmin) return m.reply('⚠️ Il bot deve essere admin.')
 
-let handler = async (m, { conn, isAdmin, isBotAdmin, args, usedPrefix, command }) => {
-  if (!m.isGroup) return;
+  try {
 
-  const groupId = m.chat;
+    // PRENDE LISTA RICHIESTE
+    let req = await conn.groupRequestParticipantsList(m.chat)
+    let total = req?.length || 0
 
-  if (richiestaInAttesa[m.sender]) {
-    const pending = await conn.groupRequestParticipantsList(groupId);
-    const input = (m.text || '').trim();
-    delete richiestaInAttesa[m.sender];
+    if (total === 0)
+      return m.reply('📭 Non ci sono richieste di ingresso.')
 
-    if (/^\d+$/.test(input)) {
-      const numero = parseInt(input);
-      if (numero <= 0) return m.reply("❌ Numero non valido. Usa un numero > 0.");
-      const daAccettare = pending.slice(0, numero);
-      let accettati = 0;
-      try {
-        const jidList = daAccettare.map(p => p.jid);
-        await conn.groupRequestParticipantsUpdate(groupId, jidList, 'approve');
-        accettati = jidList.length;
-      } catch {}
-      return m.reply(`✅ Accettate ${accettati} richieste.`);
-    }
+    // 1️⃣ DISATTIVA APPROVAZIONE
+    await conn.query({
+      tag: 'iq',
+      attrs: {
+        to: m.chat,
+        type: 'set',
+        xmlns: 'w:g2',
+      },
+      content: [{
+        tag: 'membership_approval_mode',
+        attrs: {},
+        content: [{
+          tag: 'group_join',
+          attrs: { state: 'off' } 
+        }]
+      }]
+    })
 
-    if (input === '39' || input === '+39') {
-      const daAccettare = pending.filter(p => p.jid.startsWith('39'));
-      let accettati = 0;
-      try {
-        const jidList = daAccettare.map(p => p.jid);
-        await conn.groupRequestParticipantsUpdate(groupId, jidList, 'approve');
-        accettati = jidList.length;
-      } catch {}
-      return m.reply(`✅ Accettate ${accettati} richieste con prefisso 39.`);
-    }
+    // MESSAGGIO CON NUMERO
+    await conn.sendMessage(m.chat, { 
+      text: `✅ Ho accettato *${total} richieste* di ingresso.` 
+    }, { quoted: m })
 
-    return m.reply("❌ Input non valido. Invia un numero o '39'.");
+    // 2️⃣ ASPETTA
+    await delay(2000)
+
+    // 3️⃣ RIATTIVA APPROVAZIONE
+    await conn.query({
+      tag: 'iq',
+      attrs: {
+        to: m.chat,
+        type: 'set',
+        xmlns: 'w:g2',
+      },
+      content: [{
+        tag: 'membership_approval_mode',
+        attrs: {},
+        content: [{
+          tag: 'group_join',
+          attrs: { state: 'on' } 
+        }]
+      }]
+    })
+
+  } catch (e) {
+    console.error("ERRORE_QUERY_DIRETTA:", e)
+    m.reply('❌ Errore critico: il gruppo non supporta l\'approvazione.')
   }
+}
 
-  if (!isBotAdmin) return m.reply("❌ Devo essere admin per gestire richieste.");
-  if (!isAdmin) return m.reply("❌ Solo admin del gruppo possono usare questo comando.");
+handler.help = ['accetta']
+handler.tags = ['group']
+handler.command = ['accetta','acetta']
 
-  const pending = await conn.groupRequestParticipantsList(groupId);
-  if (!pending.length) return m.reply("✅ Non ci sono richieste in sospeso.");
+handler.group = true
+handler.admin = true
+handler.botAdmin = true
 
-  if (!args[0]) {
-    const text = `📨 Richieste in sospeso: ${pending.length}\nSeleziona un'opzione:`;
-    return conn.sendMessage(m.chat, {
-      text,
-      footer: 'Gestione richieste gruppo',
-      buttons: [
-        { buttonId: `${usedPrefix}${command} accetta`, buttonText: { displayText: "✅ Accetta tutte" }, type: 1 },
-        { buttonId: `${usedPrefix}${command} rifiuta`, buttonText: { displayText: "❌ Rifiuta tutte" }, type: 1 },
-        { buttonId: `${usedPrefix}${command} accetta39`, buttonText: { displayText: "🇮🇹 Accetta +39" }, type: 1 },
-        { buttonId: `${usedPrefix}${command} gestisci`, buttonText: { displayText: "📥 Gestisci richieste" }, type: 1 }
-      ],
-      headerType: 1,
-      viewOnce: true
-    }, { quoted: m });
-  }
-
-  if (args[0] === 'accetta') {
-    const numero = parseInt(args[1]);
-    const daAccettare = isNaN(numero) || numero <= 0 ? pending : pending.slice(0, numero);
-    let accettati = 0;
-    try {
-      const jidList = daAccettare.map(p => p.jid);
-      await conn.groupRequestParticipantsUpdate(groupId, jidList, 'approve');
-      accettati = jidList.length;
-    } catch {}
-    return m.reply(`✅ Accettate ${accettati} richieste.`);
-  }
-
-  if (args[0] === 'accettane') {
-    const numero = parseInt(args[1]);
-    if (isNaN(numero) || numero <= 0) return m.reply("❌ Numero non valido. Usa un numero maggiore di 0.");
-    const daAccettare = pending.slice(0, numero);
-    let accettati = 0;
-    try {
-      const jidList = daAccettare.map(p => p.jid);
-      await conn.groupRequestParticipantsUpdate(groupId, jidList, 'approve');
-      accettati = jidList.length;
-    } catch {}
-    return m.reply(`✅ Accettate ${accettati} richieste su ${numero}.`);
-  }
-
-  if (args[0] === 'rifiuta') {
-    let rifiutati = 0;
-    try {
-      const jidList = pending.map(p => p.jid);
-      await conn.groupRequestParticipantsUpdate(groupId, jidList, 'reject');
-      rifiutati = jidList.length;
-    } catch {}
-    return m.reply(`❌ Rifiutate ${rifiutati} richieste.`);
-  }
-
-  if (args[0] === 'accetta39') {
-    const daAccettare = pending.filter(p => p.jid.startsWith('39'));
-    let accettati = 0;
-    try {
-      const jidList = daAccettare.map(p => p.jid);
-      await conn.groupRequestParticipantsUpdate(groupId, jidList, 'approve');
-      accettati = jidList.length;
-    } catch {}
-    return m.reply(`✅ Accettate ${accettati} richieste con prefisso 39.`);
-  }
-
-  if (args[0] === 'gestisci') {
-    return conn.sendMessage(m.chat, {
-      text: `📥 Quante richieste vuoi accettare?\n\nScegli una quantità qui sotto oppure scrivi manualmente:\n\n*.${command} accettane <numero>*\nEsempio: *.${command} accettane 7*`,
-      footer: 'Gestione personalizzata richieste',
-      buttons: [
-        { buttonId: `${usedPrefix}${command} accettane 10`, buttonText: { displayText: "10" }, type: 1 },
-        { buttonId: `${usedPrefix}${command} accettane 20`, buttonText: { displayText: "20" }, type: 1 },
-        { buttonId: `${usedPrefix}${command} accettane 50`, buttonText: { displayText: "50" }, type: 1 },
-        { buttonId: `${usedPrefix}${command} accettane 100`, buttonText: { displayText: "100" }, type: 1 },
-        { buttonId: `${usedPrefix}${command} accettane 200`, buttonText: { displayText: "200" }, type: 1 },
-      ],
-      headerType: 1,
-      viewOnce: true
-    }, { quoted: m });
-  }
-};
-
-handler.command = ['richieste'];
-handler.tags = ['gruppo'];
-handler.help = ['richieste'];
-handler.group = true;
-handler.admin = true;
-handler.botAdmin = true;
-
-export default handler;
+export default handler
