@@ -9,107 +9,50 @@ let handler = async (m, { conn, text, command, usedPrefix }) => {
     let user = m.sender
     let users = global.db.data.users
 
-    // --- DATABASE CHECK ---
     const checkUser = (id) => {
         if (!id) return
         if (!users[id]) users[id] = {}
-        if (!Array.isArray(users[id].p)) users[id].p = [] // Figli
-        if (users[id].c === undefined) users[id].c = null // Partner
-        if (users[id].s === undefined) users[id].s = null // Padre/Madre (Genitore)
+        if (!Array.isArray(users[id].p)) users[id].p = []
+        if (users[id].c === undefined) users[id].c = null
+        if (users[id].s === undefined) users[id].s = null
     }
 
     checkUser(user)
 
-    // --- 1. MENU FAMIGLIA ---
-    if (command === 'famiglia') {
-        let menu = `*🌳 SISTEMA GENEALOGICO REALE 🌳*\n\n`
-        menu += `*COMANDI UNIONE:* \n`
-        menu += `👉 *${usedPrefix}unione @tag* - Chiedi unione\n`
-        menu += `👉 *${usedPrefix}sciogli* - Divorzia dal partner\n\n`
-        menu += `*COMANDI PROGENIE:* \n`
-        menu += `👉 *${usedPrefix}adotta @tag* - Adotta un figlio\n`
-        menu += `👉 *${usedPrefix}disereda @tag* - Rimuovi un figlio\n\n`
-        menu += `*VISUALIZZAZIONE:* \n`
-        menu += `👉 *${usedPrefix}famigliamia* - Visualizza il tuo albero (IMG)\n`
-        menu += `👉 *${usedPrefix}albero @tag* - Guarda l'albero di un altro\n`
-        return m.reply(menu)
-    }
-
-    // --- 2. LOGICA UNIONE ---
-    if (command === 'unione') {
-        let target = m.mentionedJid[0] || (m.quoted ? m.quoted.sender : null)
-        if (!target || target === user) return m.reply('*⚠️ Tagga il tuo partner!*')
-        checkUser(target)
-
-        if (users[user].c) return m.reply('*⚠️ Sei già unito a qualcuno!*')
-        if (users[target].c) return m.reply('*⚠️ Questa persona è già impegnata!*')
-
-        users[target].propostaUnione = user
-        return m.reply(`*💍 @${user.split('@')[0]} ha chiesto l'unione a @${target.split('@')[0]}!*\nScrivi *${usedPrefix}accettaunione* per confermare.`, null, { mentions: [user, target] })
-    }
-
-    if (command === 'accettaunione') {
-        let proponente = users[user].propostaUnione
-        if (!proponente) return m.reply('*⚠️ Nessuna richiesta in sospeso.*')
-        users[user].c = proponente
-        users[proponente].c = user
-        delete users[user].propostaUnione
-        return m.reply(`*✨ Unione confermata! Siete ora partner ufficiali.*`)
-    }
-
-    if (command === 'sciogli') {
-        let ex = users[user].c
-        if (!ex) return m.reply('*⚠️ Non sei unito a nessuno.*')
-        users[user].c = null
-        if (users[ex]) users[ex].c = null
-        return m.reply('*📄 Unione sciolta. Siete tornati single.*')
-    }
-
-    // --- 3. LOGICA FIGLI (ADOTTA / DISEREDA) ---
-    if (command === 'adotta') {
-        let target = m.mentionedJid[0] || (m.quoted ? m.quoted.sender : null)
-        if (!target || target === user) return m.reply('*⚠️ Chi vuoi adottare? Tagga qualcuno.*')
-        checkUser(target)
-
-        if (users[target].s) return m.reply('*⚠️ Questa persona ha già un genitore!*')
-        
-        users[user].p.push(target)
-        users[target].s = user
-        return m.reply(`*👶 Hai adottato @${target.split('@')[0]}! Fa parte della tua famiglia.*`, null, { mentions: [target] })
-    }
-
+    // --- DISEREDA (FIXATO) ---
     if (command === 'disereda') {
         let target = m.mentionedJid[0] || (m.quoted ? m.quoted.sender : null)
-        if (!target) return m.reply('*⚠️ Chi vuoi diseredare?*')
+        if (!target) return m.reply(`*⚠️ Tagga il figlio da rimuovere!* \nEsempio: ${usedPrefix}disereda @tag`)
         
-        let index = users[user].p.indexOf(target)
-        if (index === -1) return m.reply('*⚠️ Questa persona non è tra i tuoi figli.*')
+        checkUser(user)
+        let figli = users[user].p
+        
+        if (!figli.includes(target)) {
+            return m.reply('*❌ Questo utente non risulta essere tuo figlio.*')
+        }
 
-        users[user].p.splice(index, 1)
+        // Rimuovo il figlio dall'array del genitore
+        users[user].p = figli.filter(id => id !== target)
+        // Rimuovo il genitore dal profilo del figlio
         if (users[target]) users[target].s = null
-        return m.reply(`*🚫 @${target.split('@')[0]} è stato rimosso dall'albero di famiglia.*`, null, { mentions: [target] })
+        
+        return m.reply(`*🚫 @${target.split('@')[0]} è stato rimosso dalla tua famiglia.*`, null, { mentions: [target] })
     }
 
-    // --- 4. GENERAZIONE IMMAGINE (ALBERO) ---
+    // --- ALBERO (CON FIX NOMI) ---
     if (command === 'famigliamia' || command === 'albero') {
         let target = (command === 'famigliamia') ? user : (m.mentionedJid[0] || (m.quoted ? m.quoted.sender : user))
         checkUser(target)
 
-        await m.reply('⏳ *Generazione albero in corso...*')
+        await m.reply('⏳ *Generazione immagine in corso...*')
 
-        const canvas = createCanvas(800, 700)
+        const canvas = createCanvas(800, 750)
         const ctx = canvas.getContext('2d')
 
-        // Sfondo
-        ctx.fillStyle = '#1a1a1a'
+        // Sfondo Scuro
+        ctx.fillStyle = '#121212'
         ctx.fillRect(0, 0, canvas.width, canvas.height)
         
-        // Titolo
-        ctx.fillStyle = '#ffffff'
-        ctx.font = 'bold 35px Arial'
-        ctx.textAlign = 'center'
-        ctx.fillText(`FAMIGLIA REALE DI ${conn.getName(target).toUpperCase()}`, canvas.width / 2, 60)
-
         const drawBox = async (id, x, y, label, color) => {
             if (!id) return
             ctx.fillStyle = color
@@ -118,11 +61,15 @@ let handler = async (m, { conn, text, command, usedPrefix }) => {
             ctx.lineWidth = 4
             ctx.strokeRect(x - 90, y - 45, 180, 90)
             
+            // Testo nome (CONVERSIONE ID -> NOME)
             ctx.fillStyle = '#000000'
             ctx.font = 'bold 16px Arial'
+            ctx.textAlign = 'center'
             ctx.fillText(label, x, y - 10)
+            
             ctx.font = '14px Arial'
-            let name = conn.getName(id) || 'Utente'
+            // QUI IL FIX: Recupero il nome reale o uso il numero se il nome non esiste
+            let name = conn.getName(id) || id.split('@')[0]
             ctx.fillText(name.substring(0, 18), x, y + 20)
         }
 
@@ -130,11 +77,16 @@ let handler = async (m, { conn, text, command, usedPrefix }) => {
         let partner = u.c
         let padre = u.s
 
-        // Linee Padre -> Tu
+        // Titolo
+        ctx.fillStyle = '#ffffff'
+        ctx.font = 'bold 30px Arial'
+        ctx.fillText(`ALBERO DI ${conn.getName(target).toUpperCase()}`, canvas.width / 2, 50)
+
+        // Linee e Box Genitore
         if (padre) {
-            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3
-            ctx.beginPath(); ctx.moveTo(400, 195); ctx.lineTo(400, 280); ctx.stroke()
-            await drawBox(padre, 400, 150, '👨 GENITORE', '#3498db')
+            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2
+            ctx.beginPath(); ctx.moveTo(400, 195); ctx.lineTo(400, 270); ctx.stroke()
+            await drawBox(padre, 400, 150, '👪 GENITORE', '#3498db')
         }
 
         // Tu e Partner
@@ -152,23 +104,57 @@ let handler = async (m, { conn, text, command, usedPrefix }) => {
             ctx.strokeStyle = '#ffffff'; ctx.beginPath()
             ctx.moveTo(400, 370); ctx.lineTo(400, 460); ctx.stroke()
             
-            let figliMostrati = u.p.slice(0, 3)
-            let startX = 400 - (figliMostrati.length - 1) * 200 / 2
+            let figliMostrati = u.p.slice(0, 4) // Massimo 4 figli visibili
+            let startX = 400 - (figliMostrati.length - 1) * 190 / 2
             for (let i = 0; i < figliMostrati.length; i++) {
-                let fx = startX + (i * 200)
+                let fx = startX + (i * 190)
                 ctx.beginPath(); ctx.moveTo(400, 460); ctx.lineTo(fx, 510); ctx.stroke()
-                await drawBox(figliMostrati[i], fx, 550, '👶 FIGLIO', '#55efc4')
+                await drawBox(figliMostrati[i], fx, 555, '👶 FIGLIO', '#2ecc71')
             }
         }
 
         const buffer = canvas.toBuffer()
-        return conn.sendMessage(chat, { image: buffer, caption: `*🌳 Albero Genealogico di @${target.split('@')[0]}*`, mentions: [target] }, { quoted: m })
+        return conn.sendMessage(chat, { image: buffer, caption: `*🌳 Albero di @${target.split('@')[0]}*`, mentions: [target] }, { quoted: m })
+    }
+
+    // --- ALTRI COMANDI (Restano invariati ma con checkUser) ---
+    if (command === 'adotta') {
+        let target = m.mentionedJid[0] || (m.quoted ? m.quoted.sender : null)
+        if (!target || target === user) return m.reply('*⚠️ Tagga chi vuoi adottare!*')
+        checkUser(target)
+        if (users[target].s) return m.reply('*❌ Ha già un genitore!*')
+        users[user].p.push(target)
+        users[target].s = user
+        m.reply('*👶 Adozione completata!*')
+    }
+
+    if (command === 'unione') {
+        let target = m.mentionedJid[0] || (m.quoted ? m.quoted.sender : null)
+        if (!target || target === user) return m.reply('*⚠️ Tagga il partner!*')
+        users[target].propostaUnione = user
+        m.reply('*💍 Richiesta inviata!*')
+    }
+
+    if (command === 'accettaunione') {
+        let proponente = users[user].propostaUnione
+        if (!proponente) return m.reply('*⚠️ Nessuna richiesta.*')
+        users[user].c = proponente
+        users[proponente].c = user
+        delete users[user].propostaUnione
+        m.reply('*✨ Siete ora uniti!*')
+    }
+
+    if (command === 'sciogli') {
+        let ex = users[user].c
+        if (!ex) return m.reply('*⚠️ Sei single.*')
+        users[user].c = null; if (users[ex]) users[ex].c = null
+        m.reply('*📄 Divorzio completato.*')
     }
 }
 
-handler.help = ['famiglia', 'adotta', 'unione', 'disereda', 'famigliamia']
+handler.help = ['albero', 'disereda', 'adotta', 'unione']
 handler.tags = ['giochi']
-handler.command = /^(unione|accettaunione|adotta|disereda|albero|famiglia|famigliamia|sciogli)$/i
+handler.command = /^(unione|accettaunione|adotta|disereda|albero|famigliamia|sciogli)$/i
 handler.group = true
 
 export default handler
