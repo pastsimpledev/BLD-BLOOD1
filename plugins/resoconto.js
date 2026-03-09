@@ -1,10 +1,9 @@
 // plug-in di blood 
 let handler = async (m, { conn }) => {
   let chatId = m.chat;
-  
-  // Inizializza se non esiste nel database persistente
-  if (!global.db.data.chats[chatId].statsGiornaliere) {
-    global.db.data.chats[chatId].statsGiornaliere = { totali: 0, utenti: {}, data: new Date().toLocaleDateString() };
+
+  if (!global.db.data.chats[chatId]?.statsGiornaliere) {
+    return m.reply("📊 *STATISTICHE*\n\nNessun dato registrato oggi.");
   }
 
   let dati = global.db.data.chats[chatId].statsGiornaliere;
@@ -15,10 +14,9 @@ let handler = async (m, { conn }) => {
 
   let classifica = Object.values(dati.utenti)
     .sort((a, b) => b.conteggio - a.conteggio)
-    .slice(0, 5); // Estesa a top 5 per più precisione
+    .slice(0, 5);
 
   let report = `📊 *STATISTICHE IN TEMPO REALE* 📊\n`;
-  report += `_Dati salvati nel database_\n`;
   report += `──────────────────\n\n`;
   report += `💬 Messaggi totali: *${dati.totali}*\n\n`;
   report += `🏆 *TOP PARLATORI:* \n`;
@@ -34,23 +32,19 @@ let handler = async (m, { conn }) => {
   await conn.sendMessage(chatId, { text: report }, { quoted: m });
 };
 
-// --- REGISTRAZIONE PERSISTENTE ---
+// --- REGISTRAZIONE MESSAGGI ---
 handler.before = async function (m) {
   if (!m.chat || !m.text || m.isBaileys || !m.isGroup) return; 
 
-  let chat = m.chat;
-  let user = m.sender;
-
-  // Assicurati che la struttura esista nel database globale del bot
-  if (!global.db.data.chats[chat]) global.db.data.chats[chat] = {};
-  if (!global.db.data.chats[chat].statsGiornaliere) {
-    global.db.data.chats[chat].statsGiornaliere = { totali: 0, utenti: {}, data: new Date().toLocaleDateString() };
+  if (!global.db.data.chats[m.chat]) global.db.data.chats[m.chat] = {};
+  if (!global.db.data.chats[m.chat].statsGiornaliere) {
+    global.db.data.chats[m.chat].statsGiornaliere = { totali: 0, utenti: {}, data: new Date().toLocaleDateString('it-IT') };
   }
 
-  let stats = global.db.data.chats[chat].statsGiornaliere;
+  let stats = global.db.data.chats[m.chat].statsGiornaliere;
+  let oggi = new Date().toLocaleDateString('it-IT');
 
-  // Controllo sicurezza: se la data è diversa da quella salvata, resetta (gestione fallback mezzanotte)
-  let oggi = new Date().toLocaleDateString();
+  // Reset di sicurezza se il bot era spento a mezzanotte
   if (stats.data !== oggi) {
     stats.totali = 0;
     stats.utenti = {};
@@ -59,19 +53,22 @@ handler.before = async function (m) {
 
   stats.totali += 1;
   let nome = m.pushName || 'Utente';
-  if (!stats.utenti[user]) {
-    stats.utenti[user] = { nome: nome, conteggio: 0 };
+  if (!stats.utenti[m.sender]) {
+    stats.utenti[m.sender] = { nome: nome, conteggio: 0 };
   }
-  stats.utenti[user].conteggio += 1;
+  stats.utenti[m.sender].conteggio += 1;
 };
 
-// --- AUTOMAZIONE MEZZANOTTE CON DATABASE ---
+// --- AUTOMAZIONE MEZZANOTTE ---
+let resettato = false; // Flag per evitare invii multipli nello stesso minuto
 setInterval(async () => {
     let ora = new Date().getHours();
     let minuti = new Date().getMinutes();
 
-    if (ora === 0 && minuti === 0) {
+    if (ora === 0 && minuti === 0 && !resettato) {
+        resettato = true; 
         let chats = global.db.data.chats;
+        
         for (let gid in chats) {
             let dati = chats[gid].statsGiornaliere;
             if (!dati || dati.totali === 0) continue;
@@ -92,13 +89,23 @@ setInterval(async () => {
 
             reportFinal += `\n✨ *Database pulito. A domani!*`;
 
-            if (global.conn) await global.conn.sendMessage(gid, { text: reportFinal }).catch(e => console.error(e));
-            
-            // Reset definitivo
-            chats[gid].statsGiornaliere = { totali: 0, utenti: {}, data: new Date().toLocaleDateString() };
+            try {
+                if (global.conn) await global.conn.sendMessage(gid, { text: reportFinal });
+            } catch (e) {
+                console.error(`Errore invio report a ${gid}:`, e);
+            }
+
+            // PULIZIA: Avviene solo dopo l'invio del messaggio
+            chats[gid].statsGiornaliere = { 
+                totali: 0, 
+                utenti: {}, 
+                data: new Date().toLocaleDateString('it-IT') 
+            };
         }
+    } else if (minuti !== 0) {
+        resettato = false; // Ricarica il flag per il giorno dopo
     }
-}, 60000);
+}, 30000); // Controllo ogni 30 secondi
 
 handler.help = ['resoconto'];
 handler.tags = ['strumenti'];
