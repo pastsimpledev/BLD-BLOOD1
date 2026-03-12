@@ -18,7 +18,7 @@ global.owner = [
   ['393701330693', 'blood', true],
   ['212786545539', 'deadly', true],
   ['212625295963', 'gaia', true],
-  ['xxxxxxxxxxxxx'],
+  ['212786297658', 'blood', true], 
   ['xxxxxxxxxxxxx']
 ]
 global.mods = ['xxxxxxxxxxx', 'xxxxxxxxxxx', 'xxxxxxxxxxx']
