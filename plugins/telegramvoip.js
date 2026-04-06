@@ -1,90 +1,86 @@
-import { TelegramClient } from 'telegram'
+import { TelegramClient, Api } from 'telegram'
 import { StringSession } from 'telegram/sessions/index.js'
 import { NewMessage } from 'telegram/events/index.js'
 
-// --- CONFIGURAZIONE FISSA ---
-const apiId = 2040; 
-const apiHash = 'b18441a1ff607e10a989891a5462e627'; 
-const targetBotId = "5916422327"; 
+// --- CONFIGURAZIONE ---
+const apiId = 2040;
+const apiHash = 'b18441a1ff607e10a989891a5462e627';
+const targetBotUsername = "Number_Nest_Bot";
 const sessionSaved = "1BAAOMTQ5LjE1NC4xNjcuOTEAUB9OQLQkNqxtxPwutWa2/cpTA8jxTWL1WgZojzgQL+RSVbiUMnVC71ydpMfscNdF5bCR9ijjwkkb3SD5/LRFNC+KGpPiJBDNr48MAT1TQZI9WA/Ld/RhjKu2/jThMk5pnJ3pSzDF3eWaD3KOjVqPNRQ5diSpO55KVHvkWp10albKXG1yXFOSOrcT7i8tg+hRNqfIWp334sXiYt6o+WP+JuSQXeheXMRvPIo17H/vVIbQN66hVsxOa/SKQgzzhQD9fXNeOIoSO6owjtJsmbwH1r9b/OB+hZ3J7Xd9o4gjv9clALS2SyB+A/Vs2/V4j/I/oKAFUpS7DbwoVD1oJ5Xh90A";
 
-// Oggetto globale per mantenere la connessione stabile
 global.tgVoip = global.tgVoip || {
     client: null,
     conn: null,
-    chatId: null
+    chatId: null,
+    isListening: false
 };
 
 let handler = async (m, { conn, text }) => {
     if (m.isGroup) return;
 
-    // Aggiorniamo i riferimenti WhatsApp ogni volta che viene usato il comando
     global.tgVoip.conn = conn;
     global.tgVoip.chatId = m.chat;
 
     try {
-        // 1. Inizializza il client solo se non esiste o non è connesso
         if (!global.tgVoip.client || !global.tgVoip.client.connected) {
-            console.log("📡 Avvio ponte Telegram...");
+            console.log("📡 Connessione a Telegram...");
             global.tgVoip.client = new TelegramClient(new StringSession(sessionSaved), apiId, apiHash, {
                 connectionRetries: 5,
             });
-
             await global.tgVoip.client.connect();
-            console.log("✅ Telegram Connesso.");
-
-            // 2. Registra l'ascoltatore UNA SOLA VOLTA
-            global.tgVoip.client.addEventHandler(async (event) => {
-                const message = event.message;
-                if (!message || !message.text) return;
-
-                const senderId = message.senderId ? message.senderId.toString() : "";
-                
-                // Se il messaggio arriva dal bot target su Telegram
-                if (senderId.includes(targetBotId) || senderId === "5916422327") {
-                    console.log("📥 Messaggio ricevuto da Telegram, inoltro in corso...");
-                    
-                    if (global.tgVoip.conn && global.tgVoip.chatId) {
-                        try {
-                            // COPIA E INCOLLA PURO
-                            await global.tgVoip.conn.sendMessage(global.tgVoip.chatId, { 
-                                text: message.text 
-                            });
-                        } catch (err) {
-                            console.error("❌ Errore invio WhatsApp:", err);
-                        }
-                    }
-                }
-            }, new NewMessage({}));
         }
 
-        // 3. Invio comando a Telegram (senza ripetere il login)
-        const toSend = text ? text : "/start";
-        await global.tgVoip.client.sendMessage("Number_Nest_Bot", { message: toSend });
-        await m.react('📡');
+        // Registra l'evento solo se non è già attivo
+        if (!global.tgVoip.isListening) {
+            global.tgVoip.client.addEventHandler(async (event) => {
+                const message = event.message;
+                
+                // Verifichiamo che il messaggio provenga dal bot target
+                // Usiamo peerId per sicurezza
+                if (message.peerId) {
+                    console.log("📥 Messaggio ricevuto da Telegram...");
+                    
+                    let testata = "🤖 *RISPOSTA DA TELEGRAM*\n\n";
+                    let corpo = message.message || "_[Messaggio vuoto o Media]_";
+                    
+                    if (global.tgVoip.conn && global.tgVoip.chatId) {
+                        await global.tgVoip.conn.sendMessage(global.tgVoip.chatId, { 
+                            text: testata + corpo 
+                        });
+                    }
+                }
+            }, new NewMessage({ incoming: true }));
+            global.tgVoip.isListening = true;
+        }
+
+        const command = text ? text : "/start";
+        await global.tgVoip.client.sendMessage(targetBotUsername, { message: command });
+        await m.react('⏳');
 
     } catch (e) {
-        console.error("❌ Errore Plugin:", e);
-        m.reply(`Errore: ${e.message}`);
+        console.error(e);
+        m.reply("❌ Errore durante la connessione a Telegram.");
     }
 }
 
-// Supporto per rispondere scrivendo normalmente nella chat
+// Gestore per i messaggi successivi (scrivere normalmente in chat)
 handler.before = async (m) => {
     if (m.isGroup || !m.text || m.text.startsWith('.') || !global.tgVoip.client) return;
+    
+    // Se l'utente scrive nella chat dove è attivo il servizio
     if (m.chat === global.tgVoip.chatId) {
         try {
-            await global.tgVoip.client.sendMessage("Number_Nest_Bot", { message: m.text });
+            await global.tgVoip.client.sendMessage(targetBotUsername, { message: m.text });
             await m.react('📤');
         } catch (e) {
-            console.error("❌ Errore risposta:", e);
+            console.error("Errore inoltro:", e);
         }
     }
 }
 
 handler.help = ['voip']
-handler.tags = ['strumenti']
+handler.tags = ['tools']
 handler.command = ['voip']
-handler.private = true 
+handler.private = true
 
 export default handler
