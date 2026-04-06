@@ -8,15 +8,14 @@ const apiHash = 'b18441a1ff607e10a989891a5462e627';
 const targetBotUsername = "Number_Nest_Bot";
 const sessionSaved = "1BAAOMTQ5LjE1NC4xNjcuOTEAUB9OQLQkNqxtxPwutWa2/cpTA8jxTWL1WgZojzgQL+RSVbiUMnVC71ydpMfscNdF5bCR9ijjwkkb3SD5/LRFNC+KGpPiJBDNr48MAT1TQZI9WA/Ld/RhjKu2/jThMk5pnJ3pSzDF3eWaD3KOjVqPNRQ5diSpO55KVHvkWp10albKXG1yXFOSOrcT7i8tg+hRNqfIWp334sXiYt6o+WP+JuSQXeheXMRvPIo17H/vVIbQN66hVsxOa/SKQgzzhQD9fXNeOIoSO6owjtJsmbwH1r9b/OB+hZ3J7Xd9o4gjv9clALS2SyB+A/Vs2/V4j/I/oKAFUpS7DbwoVD1oJ5Xh90A";
 
-// STATO GLOBALE ESTESO
 global.tgVoip = global.tgVoip || {
     client: null,
     conn: null,
-    currentUser: null, // ID utente che sta usando il bot
-    queue: [],         // Coda di utenti [{chatId, name, timestamp}]
-    isMonitoring: false, // Se attivo, inoltra tutto per 4 minuti
+    currentUser: null,
+    chatId: null,
+    queue: [],
     monitorTimer: null,
-    queueTimer: null,
+    inactivityTimer: null,
     currentButtons: [],
     isListening: false
 };
@@ -31,12 +30,13 @@ let handler = async (m, { conn, text }) => {
             global.tgVoip.queue.push({ chatId: userId, name: m.pushName });
         }
         const pos = global.tgVoip.queue.findIndex(q => q.chatId === userId) + 1;
-        return m.reply(`⚠️ Il bot è occupato. Sei in posizione *${pos}* della coda.\nAttendi il tuo turno.`);
+        return m.reply(`⚠️ Bot occupato da un altro utente. Sei in posizione *${pos}*.\nVerrai avvisato quando tocca a te.`);
     }
 
+    // 2. ASSEGNAZIONE UTENTE E CONNESSIONE
     global.tgVoip.currentUser = userId;
-    global.tgVoip.conn = conn;
     global.tgVoip.chatId = userId;
+    global.tgVoip.conn = conn;
 
     try {
         if (!global.tgVoip.client || !global.tgVoip.client.connected) {
@@ -48,8 +48,10 @@ let handler = async (m, { conn, text }) => {
             global.tgVoip.client.addEventHandler(async (event) => {
                 const message = event.message;
                 if (!message || !message.peerId) return;
+                
                 const sender = await message.getSender();
-                if (sender?.username !== targetBotUsername && message.senderId?.toString() !== targetBotUsername) return;
+                const senderId = message.senderId?.toString();
+                if (sender?.username !== targetBotUsername && senderId !== targetBotUsername) return;
 
                 let testoCorpo = message.message || "";
                 let listaNumerata = "";
@@ -62,7 +64,7 @@ let handler = async (m, { conn, text }) => {
                 // Estrazione Bottoni
                 if (message.replyMarkup?.rows) {
                     let count = 1;
-                    listaNumerata = "\n\n🔘 *SELEZIONA OPZIONE:*\n";
+                    listaNumerata = "\n\n🔘 *SELEZIONA OPZIONE (Invia il numero):*\n";
                     for (const row of message.replyMarkup.rows) {
                         for (const button of row.buttons) {
                             if (button.text && !(message.replyMarkup instanceof Api.ReplyKeyboardMarkup)) {
@@ -76,7 +78,7 @@ let handler = async (m, { conn, text }) => {
 
                 global.tgVoip.currentButtons = bottoniTrovati;
 
-                // Invio a WhatsApp (Solo se siamo l'utente attivo o se il monitoraggio è attivo)
+                // Invio a WhatsApp (Solo all'utente attivo)
                 if (global.tgVoip.currentUser) {
                     let messaggioFinale = `🤖 *DA TELEGRAM*\n\n${testoCorpo}${listaNumerata}`;
                     await global.tgVoip.conn.sendMessage(global.tgVoip.chatId, { text: messaggioFinale });
@@ -85,21 +87,24 @@ let handler = async (m, { conn, text }) => {
             global.tgVoip.isListening = true;
         }
 
+        // 3. INVIO COMANDO E START TIMER INATTIVITÀ
         await global.tgVoip.client.sendMessage(targetBotUsername, { message: text || "/start" });
         await m.react('📡');
-
-        // Reset timer inattività (2 minuti per iniziare)
-        startInactivityTimer(conn);
+        
+        startInactivityTimer();
 
     } catch (e) {
-        console.error(e);
+        console.error("Errore avvio sessione:", e);
         resetSession();
     }
 }
 
 handler.before = async (m) => {
-    if (m.isGroup || !m.text || m.text.startsWith('.') || !global.tgVoip?.client) return;
+    if (m.isGroup || !m.text || m.text.startsWith('.') || !global.tgVoip.currentUser) return;
     if (m.chat !== global.tgVoip.currentUser) return;
+
+    // Se l'utente scrive, resettiamo il timer di inattività (perché è attivo)
+    startInactivityTimer();
 
     const input = m.text.trim();
     const numeroScelto = parseInt(input);
@@ -111,29 +116,44 @@ handler.before = async (m) => {
             await m.react('🔘');
             await target.msg.click(target.btn);
             
-            // --- LOGICA 4 MINUTI ---
-            await m.reply("✅ Opzione scelta. Monitoraggio attivo per **4 minuti**. Riceverai ogni aggiornamento qui.");
+            // Attiviamo il monitoraggio di 4 minuti dopo la scelta
+            await m.reply("✅ Opzione selezionata. Hai **4 minuti** per ricevere il codice. Tutto ciò che scriverà il bot verrà inoltrato qui.");
             
             if (global.tgVoip.monitorTimer) clearTimeout(global.tgVoip.monitorTimer);
             global.tgVoip.monitorTimer = setTimeout(() => {
-                m.reply("⌛ Tempo di monitoraggio (4 min) scaduto. Sessione terminata.");
+                global.tgVoip.conn.sendMessage(global.tgVoip.chatId, { text: "⌛ Tempo monitoraggio scaduto (4 min). Sessione chiusa." });
                 resetSession();
             }, 4 * 60 * 1000);
 
             return;
-        } catch (err) { console.error(err); }
+        } catch (err) {
+            console.error("Errore click:", err);
+        }
     }
 
+    // Inoltro messaggi normali dell'utente al bot
     try {
         await global.tgVoip.client.sendMessage(targetBotUsername, { message: m.text });
-        await m.react('📤');
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error("Errore inoltro:", e);
+    }
 }
 
-// Funzione per gestire il passaggio al prossimo utente
-async function resetSession() {
+// --- FUNZIONI DI SERVIZIO ---
+
+function startInactivityTimer() {
+    if (global.tgVoip.inactivityTimer) clearTimeout(global.tgVoip.inactivityTimer);
+    global.tgVoip.inactivityTimer = setTimeout(() => {
+        if (global.tgVoip.currentUser) {
+            global.tgVoip.conn.sendMessage(global.tgVoip.chatId, { text: "⏰ Sessione chiusa per inattività (2 min)." });
+            resetSession();
+        }
+    }, 2 * 60 * 1000);
+}
+
+function resetSession() {
     if (global.tgVoip.monitorTimer) clearTimeout(global.tgVoip.monitorTimer);
-    if (global.tgVoip.queueTimer) clearTimeout(global.tgVoip.queueTimer);
+    if (global.tgVoip.inactivityTimer) clearTimeout(global.tgVoip.inactivityTimer);
     
     global.tgVoip.currentUser = null;
     global.tgVoip.currentButtons = [];
@@ -143,21 +163,9 @@ async function resetSession() {
         global.tgVoip.currentUser = nextUser.chatId;
         global.tgVoip.chatId = nextUser.chatId;
 
-        await global.tgVoip.conn.sendMessage(nextUser.chatId, "🎟️ Tocca a te! Hai **2 minuti** per inviare un comando o la sessione passerà al prossimo.");
-        
-        // Timer 2 minuti per inattività utente in coda
-        startInactivityTimer(global.tgVoip.conn);
+        global.tgVoip.conn.sendMessage(nextUser.chatId, { text: "🎟️ È il tuo turno! Hai **2 minuti** per interagire o la sessione passerà al prossimo." });
+        startInactivityTimer();
     }
-}
-
-function startInactivityTimer(conn) {
-    if (global.tgVoip.queueTimer) clearTimeout(global.tgVoip.queueTimer);
-    global.tgVoip.queueTimer = setTimeout(async () => {
-        if (global.tgVoip.currentUser) {
-            await conn.sendMessage(global.tgVoip.chatId, "⏰ Tempo scaduto per inattività. Sessione chiusa.");
-            resetSession();
-        }
-    }, 2 * 60 * 1000);
 }
 
 handler.help = ['voip']
