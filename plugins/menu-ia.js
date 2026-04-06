@@ -24,7 +24,7 @@ const defaultMenu = {
   header: '      ⋆｡˚『 %category 』˚｡⋆\n╭',
   body: '*│ ➤* 『%emoji』 %cmd',
   footer: '*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*\n',
-  after: `> ⋆｡°✩ 𝖛𝖆𝖗𝖊𝖇𝖔𝖙 ✩°｡⋆`,
+  after: `> ⋆｡°✩ BLD-BLOOD✩°｡⋆`,
 }
 
 let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
