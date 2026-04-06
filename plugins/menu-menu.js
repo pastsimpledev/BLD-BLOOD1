@@ -33,6 +33,12 @@ const defaultMenu = {
   after: `_Powered by BLD-BOT Interface_`,
 }
 
+// --- MODIFICA PERCORSO: CARTELLA SPECIFICA ---
+// Se 'menu-principale.jpeg' è una CARTELLA, il percorso sarà:
+// join(process.cwd(), 'menu-principale.jpeg', 'NOME_FILE_DENTRO.jpg')
+// Qui sotto lo imposto cercando direttamente il file se è rinominato così:
+const localImg = join(process.cwd(), 'menu-principale.jpeg'); 
+
 const bldButtons = [
   { title: "🛡️ SICUREZZA", command: "attiva" },
   { title: "🎮 GIOCHI", command: "menugiochi" },
@@ -88,12 +94,13 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
       type: 1
     }));
 
-    // --- INVIO SOLO TESTO E BOTTONI (IMMAGINE RIMOSSA) ---
+    // Invio con immagine dal nuovo percorso
     await conn.sendMessage(m.chat, {
-      text: text.trim(),
+      image: { url: localImg },
+      caption: text.trim(),
       footer: "B L D - B O T  S Y S T E M",
       buttons: buttons,
-      headerType: 1,
+      headerType: 4,
       viewOnce: true 
     }, { quoted: m });
 
