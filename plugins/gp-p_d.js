@@ -3,21 +3,19 @@ let handler = async (m, { conn, text, command, isAdmin, isOwner }) => {
   const isAntinukeOn = chat?.antinuke
   const sender = m.sender
   
-  // Verifichiamo se l'utente è un moderatore registrato nel bot
-  const isMod = global.db.data.users[m.sender]?.moderator || false
+  // --- NUOVA LOGICA DI SICUREZZA RIGIDA ---
+  // Recuperiamo i dati del partecipante per vedere se è un admin REALE di WhatsApp
+  const groupMetadata = await conn.groupMetadata(m.chat)
+  const participants = groupMetadata.participants
+  const realAdmin = participants.find(p => p.id === sender)?.admin !== null
 
-  // --- CONTROLLO SICUREZZA FONDAMENTALE ---
-  // Aggiunto controllo: se è un moderatore, viene bloccato (possono solo Admin reali e Owner)
-  if (isMod) {
-    return conn.reply(m.chat, '『 ⛔ 』 𝐀𝐜𝐜𝐞𝐬𝐬𝐨 𝐍𝐞𝐠𝐚𝐭𝐨: I moderatori non possono gestire i gradi del gruppo.', m)
+  // Se l'utente NON è un Admin reale (di WhatsApp) e NON è l'Owner, viene bloccato.
+  // Questo esclude automaticamente i "moderatori" aggiunti tramite database che non sono admin effettivi.
+  if (!realAdmin && !isOwner) {
+    return conn.reply(m.chat, '『 ❌ 』 𝐀𝐜𝐜𝐞𝐬𝐬𝐨 𝐃𝐞𝐧𝐞𝐠𝐚𝐭𝐨: Solo gli amministratori reali possono gestire i gradi.', m)
   }
 
-  // Se chi scrive NON è Admin e NON è Owner, non può fare nulla.
-  if (!isAdmin && !isOwner) {
-    return conn.reply(m.chat, '『 ❌ 』 𝐀𝐜𝐜𝐞𝐬𝐬𝐨 𝐃𝐞𝐧𝐞𝐠𝐚𝐭𝐨: Non sei un amministratore.', m)
-  }
-
-  // --- LOGICA PERMESSI DINAMICI (ANTINUKE) ---
+  // --- LOGICA ANTINUKE ---
   if (isAntinukeOn && !isOwner) {
     return conn.reply(m.chat, '『 🛡️ 』 𝐀𝐧𝐭𝐢𝐧𝐮𝐤𝐞 𝐀𝐭𝐭𝐢𝐯𝐨: In questa modalità solo il Creatore può gestire i gradi.', m)
   }
@@ -46,7 +44,7 @@ let handler = async (m, { conn, text, command, isAdmin, isOwner }) => {
 
   if (['demote', 'retrocedi', 'r'].includes(command)) {
     action = 'demote'
-    successMsg = `『 ⚠️ 』 𝐋’𝐮𝐭𝐞𝐧𝐭𝐞 @${user.split('@')[0]} 𝐞̀ 𝐬𝐭𝐚𝐭𝐨 𝐛𝐮𝐥𝐥𝐢𝐳𝐳𝐚𝐭𝐨\n\n𝐃𝐚: @${sender.split('@')[0]}`
+    successMsg = `『 ⚠️ 』 𝐋’𝐮𝐭𝐞𝐧𝐭𝐞 @${user.split('@')[0]} 𝐞̀ 𝐬𝐭𝐚𝐭𝐨 𝐫𝐞𝐭𝐫𝐨𝐜𝐞𝐬𝐬𝐨\n\n𝐃𝐚: @${sender.split('@')[0]}`
     errorMsg = '『 ❌ 』 Impossibile retrocedere (utente non admin o già membro semplice).'
   }
 
