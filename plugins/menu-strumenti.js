@@ -1,23 +1,35 @@
 const defmenu = {
-  before: ``.trimStart(),
-  header: 'ㅤㅤ⋆｡˚『 ╭ \`MENU STRUMENTI\` ╯ 』˚｡⋆\n╭',
-  body: '│ 『 🛠️ 』 %cmd',
-  footer: '*╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*\n',
-  after: ``.trimEnd()
+  before: `
+┏━━━━━━━━━━━━━━━━━━━━┓
+   💉  *B L O O D  -  T O O L S* 💉
+┗━━━━━━━━━━━━━━━━━━━━┛
+ ┌───────────────────
+ │ 🧪 *Soggetto:* %name
+ │ ⚙️ *Moduli:* Strumenti
+ │ ⚠️ *Status:* Deep Scan
+ └───────────────────
+`.trimStart(),
+  header: '      ⋆｡˚『 %category 』˚｡⋆\n╭',
+  body: '│ ⚡  %cmd',
+  footer: '*╰━━━━━──ׄ──ׅ──ׄ──━━━━━*\n',
+  after: `_☣️ Estrazione dati completata._`.trimEnd()
 }
 
 let handler = async (m, { conn, usedPrefix: _p }) => {
   let tags = {
-    'strumenti': 'Strumenti'
+    'strumenti': 'LABORATORIO BLOOD'
   }
 
   try {
+    let name = await conn.getName(m.sender) || 'Soggetto Ignoto'
     let help = Object.values(global.plugins).filter(plugin => !plugin.disabled && plugin.tags && plugin.tags.includes('strumenti')).map(plugin => ({
       help: Array.isArray(plugin.help) ? plugin.help : [plugin.help],
       prefix: 'customPrefix' in plugin,
     }))
+
+    // Costruzione del testo con le variabili Cyber Blood
     let text = [
-      defmenu.before,
+      defmenu.before.replace(/%name/g, name),
       defmenu.header.replace(/%category/g, tags['strumenti']),
       help.map(menu => menu.help.map(cmd =>
         defmenu.body.replace(/%cmd/g, menu.prefix ? cmd : _p + cmd)
@@ -26,8 +38,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
       defmenu.after
     ].join('\n')
 
-    // Definisci fake come oggetto vuoto se non è definito
-    let fake = global.fake || {};  // Aggiungi questa riga
+    let fake = global.fake || {};
 
     await conn.sendMessage(m.chat, {
       video: { url: './media/menu/menu5.mp4' },
@@ -35,20 +46,22 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
       gifPlayback: true,
       gifAttribution: 2,
       mimetype: 'video/mp4',
-      ...fake,  // Usa il global.fake per il contesto
+      ...fake,
       contextInfo: {
-        ...fake.contextInfo, // Mantieni il contesto del fake
+        ...fake.contextInfo,
         mentionedJid: [m.sender],
         forwardedNewsletterMessageInfo: {
           ...fake.contextInfo?.forwardedNewsletterMessageInfo,
-          newsletterName: "ᰔᩚ . ˚ Menu Strumenti ☆˒˒"
+          newsletterName: "🩸 Cyber Blood - Tools ☣️"
         }
       }
     }, { quoted: m })
 
+    await m.react('🧪')
+
   } catch (e) {
     console.error(e)
-    conn.reply(m.chat, `${global.errore}`, m)
+    conn.reply(m.chat, '☣️ ERRORE NEL SETTORE STRUMENTI', m)
     throw e
   }
 }
