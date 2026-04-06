@@ -35,7 +35,6 @@ const defaultMenu = {
 
 const swag = 'https://i.ibb.co/hJW7WwxV/varebot.jpg';
 
-// --- SISTEMA DI RILEVAMENTO DISPOSITIVO ---
 function detectDevice(msgID) {
   if (!msgID) return 'unknown'; 
   if (/^[a-zA-Z]+-[a-fA-F0-9]+$/.test(msgID)) return 'bot';
@@ -48,20 +47,17 @@ function detectDevice(msgID) {
   return 'unknown';
 }
 
-function getRandomMenus(_p) {
-  const allMenus = [
-    { title: "🛡️ SICUREZZA", command: "attiva" },
-    { title: "🎮 GIOCHI", command: "menugiochi" },
-    { title: "🤖 IA", command: "menuia" },
-    { title: "👥 GRUPPO", command: "menugruppo" },
-    { title: "📥 DOWNLOAD", command: "menudownload" },
-    { title: "🛠️ STRUMENTI", command: "menustrumenti" },
-    { title: "⭐ PREMIUM", command: "menupremium" },
-    { title: "👨‍💻 OWNER", command: "menucreatore" }
-  ];
-  const shuffled = allMenus.sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, 5);
-}
+// --- LISTA COMPLETA DI TUTTI GLI 8 MENU ---
+const allBldMenus = [
+  { title: "🛡️ SICUREZZA", command: "attiva" },
+  { title: "🎮 GIOCHI", command: "menugiochi" },
+  { title: "🤖 IA", command: "menuia" },
+  { title: "👥 GRUPPO", command: "menugruppo" },
+  { title: "📥 DOWNLOAD", command: "menudownload" },
+  { title: "🛠️ STRUMENTI", command: "menustrumenti" },
+  { title: "⭐ PREMIUM", command: "menupremium" },
+  { title: "👨‍💻 OWNER", command: "menucreatore" }
+];
 
 let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
   try {
@@ -106,8 +102,8 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
     const isGroup = m.chat.endsWith('@g.us');
 
     if (deviceType === 'ios') {
-      const randomMenus = getRandomMenus(_p);
-      const buttons = randomMenus.map(menu => ({
+      // --- VERSIONE IOS CON TUTTI GLI 8 TASTI ---
+      const buttons = allBldMenus.map(menu => ({
         buttonId: _p + menu.command,
         buttonText: { displayText: menu.title },
         type: 1
@@ -123,6 +119,7 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
 
     } else {
       if (isGroup) {
+        // --- VERSIONE ANDROID/GRUPPI ---
         let thumbnailBuffer;
         try {
           const response = await fetch(swag);
@@ -135,7 +132,7 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
           interactiveButtons: [{
             name: "single_select",
             buttonParamsJson: JSON.stringify({
-              title: "💠 APRI MENU BLD",
+              title: "💠 APRI MODULI BLD",
               sections: [{
                 title: "🛡️ SISTEMA OPERATIVO",
                 rows: [
@@ -144,14 +141,11 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
                 ]
               }, {
                 title: "📂 MODULI DISPONIBILI",
-                rows: [
-                  { id: _p + "menuia", title: "🤖 IA", description: "Intelligenza Artificiale" },
-                  { id: _p + "menugruppo", title: "👥 GRUPPO", description: "Gestione Utenti" },
-                  { id: _p + "menudownload", title: "📥 DOWNLOAD", description: "Media Downloader" },
-                  { id: _p + "menustrumenti", title: "🛠️ STRUMENTI", description: "Tools di Sistema" },
-                  { id: _p + "menupremium", title: "⭐ PREMIUM", description: "Accesso Gold" },
-                  { id: _p + "menucreatore", title: "👨‍💻 OWNER", description: "Admin Panel" }
-                ]
+                rows: allBldMenus.slice(2).map(m => ({
+                    id: _p + m.command,
+                    title: m.title,
+                    description: "Accedi al modulo " + m.title
+                }))
               }]
             })
           }],
@@ -160,24 +154,15 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
           media: { image: thumbnailBuffer }
         }, { quoted: m });
       } else {
+        // --- VERSIONE PRIVATA ---
         const sections = [
           {
             title: "🛡️ SISTEMA",
-            rows: [
-              { title: "🛡️ SICUREZZA", rowId: _p + "attiva" },
-              { title: "🎮 GIOCHI", rowId: _p + "menugiochi" }
-            ]
+            rows: allBldMenus.slice(0, 2).map(m => ({ title: m.title, rowId: _p + m.command }))
           },
           {
             title: "📂 CATEGORIE BLD",
-            rows: [
-              { title: "🤖 IA", rowId: _p + "menuia" },
-              { title: "👥 GRUPPO", rowId: _p + "menugruppo" },
-              { title: "📥 DOWNLOAD", rowId: _p + "menudownload" },
-              { title: "🛠️ STRUMENTI", rowId: _p + "menustrumenti" },
-              { title: "⭐ PREMIUM", rowId: _p + "menupremium" },
-              { title: "👨‍💻 OWNER", rowId: _p + "menucreatore" }
-            ]
+            rows: allBldMenus.slice(2).map(m => ({ title: m.title, rowId: _p + m.command }))
           }
         ];
 
@@ -197,7 +182,7 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
 };
 
 handler.help = ['menu'];
-handler.command = ['menu', 'help', 'comandi'];
+handler.command = ['menu', 'help'];
 export default handler;
 
 function clockString(ms) {
