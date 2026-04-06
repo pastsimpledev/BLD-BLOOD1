@@ -35,7 +35,7 @@ const defaultMenu = {
 
 // --- MODIFICA PERCORSO IMMAGINE LOCALE ---
 // Usiamo join per puntare alla cartella 'media' nella root del progetto
-const localImg = join(process.cwd(), 'media', 'menu-principale.jpeg');
+const localImg = join(process.cwd(), 'media', 'menu-principale1.jpeg');
 
 const bldButtons = [
   { title: "🛡️ SICUREZZA", command: "attiva" },
