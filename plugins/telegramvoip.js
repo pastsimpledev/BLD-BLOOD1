@@ -131,10 +131,3 @@ export default handler
 
 
 
-
-
-
-
-
-inserisci che dopo che scelgo l'opzione mi arriva la risposta si hanno 4 minuti per mandare il codice (in questi 4 minuti qualunque cosa venga mandata sul canale verrà riportata in chat privata) 
-un solo utente può usare il comando, se il bot VoIP è già in uso dice di aspettare (tempo restante) e ti mette in coda, se entro due minuti che tocca a te che sei in coda il bot ti igniora e va alla persona successiva.
