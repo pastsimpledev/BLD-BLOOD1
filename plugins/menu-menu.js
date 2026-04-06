@@ -25,7 +25,7 @@ const defaultMenu = {
  │ 👥 *Total Users:* %totalreg
  └───────────────────
  
- *CLICCA SULLE SEZIONI QUI SOTTO:*
+ *SELEZIONA UN MODULO OPERATIVO:*
 `.trimStart(),
   header: '      ⋆｡˚『 %category 』˚｡⋆\n╭',
   body: '*│ ➢* 『%emoji』 %cmd',
@@ -105,12 +105,12 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
       uptime: uptime,
       name: name,
       totalreg: totalreg,
-      readMore: readMore // Questo nasconde la lista sotto il "Leggi tutto"
+      readMore: readMore 
     };
 
     let text = _text.replace(new RegExp(`%(${Object.keys(replace).sort((a, b) => b.length - a.length).join('|')})`, 'g'), (_, name) => '' + replace[name]);
 
-    // INVIO UNIFICATO (Funziona ovunque: Android, iOS, Web, PC)
+    // Invio unico con anteprima link per massimizzare la visibilità su iOS
     await conn.sendMessage(m.chat, {
       image: { url: MENU_IMAGE_URL },
       caption: text.trim(),
@@ -137,7 +137,7 @@ handler.help = ['menu'];
 handler.command = ['menu', 'help'];
 export default handler;
 
-// UTILS (Fondamentale per simulare i tasti)
+// Caratteri invisibili per il "Leggi tutto" (fondamentali per i bottoni testuali)
 const more = String.fromCharCode(8206);
 const readMore = more.repeat(4001);
 
