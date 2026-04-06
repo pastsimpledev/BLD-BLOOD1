@@ -3,7 +3,9 @@ import { join } from 'path'
 import { xpRange } from '../lib/levelling.js'
 import moment from 'moment-timezone'
 import os from 'os'
-import fs from 'fs'
+
+// --- PERCORSO IMMAGINE ---
+const localImg = join(process.cwd(), 'menu-download.jpeg');
 
 const defaultMenu = {
   before: `
@@ -30,6 +32,8 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
   }
 
   try {
+    await conn.sendPresenceUpdate('composing', m.chat)
+    
     let name = await conn.getName(m.sender)
     let _uptime = process.uptime() * 1000
     let uptime = clockString(_uptime)
@@ -68,11 +72,10 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
 
     await m.react('📥')
 
+    // --- INVIO COME IMMAGINE (SOSTITUITO VIDEO) ---
     await conn.sendMessage(m.chat, {
-      video: fs.readFileSync('./media/menu/menu8.mp4'),
+      image: { url: localImg },
       caption: text.trim(),
-      gifPlayback: true,
-      mimetype: 'video/mp4',
       contextInfo: {
         mentionedJid: [m.sender],
         forwardedNewsletterMessageInfo: {
@@ -84,7 +87,7 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
 
   } catch (e) {
     console.error(e)
-    conn.reply(m.chat, '❌ Error in Download Module.', m)
+    conn.reply(m.chat, '❌ Error in Download Module: Check if menu-download.jpeg exists.', m)
   }
 }
 
