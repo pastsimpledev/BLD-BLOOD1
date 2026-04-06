@@ -4,6 +4,11 @@ import { xpRange } from '../lib/levelling.js'
 import moment from 'moment-timezone'
 import os from 'os'
 
+// --- PERCORSO IMMAGINE ---
+// Punta alla cartella "menu-giochi.jpeg". 
+// Se dentro la cartella il file ha un nome specifico (es. "immagine.jpg"), aggiungilo dopo la virgola.
+const localImg = join(process.cwd(), 'menu-giochi.jpeg'); 
+
 const defaultMenu = {
   before: `
 ╔════════════════════╗
@@ -28,38 +33,22 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname, args, command }) => {
   let tags = { 'giochi': 'GIOCHI DISPONIBILI' }
 
   try {
+    await conn.sendPresenceUpdate('composing', m.chat)
+    
     // ----------------- DATI BASE -----------------
     let d = new Date(new Date().getTime() + 3600000)
     let locale = 'it'
     let week = d.toLocaleDateString(locale, { weekday: 'long' })
     let date = d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
-    let dateIslamic = Intl.DateTimeFormat(locale + '-TN-u-ca-islamic', { day: 'numeric', month: 'long', year: 'numeric' }).format(d)
-    let time = d.toLocaleTimeString(locale, { hour: 'numeric', minute: 'numeric', second: 'numeric' })
-    let _uptime = process.uptime() * 1000
-
-    let muptime
-    if (process.send) {
-      process.send('uptime')
-      muptime = await new Promise(resolve => {
-        process.once('message', resolve)
-        setTimeout(resolve, 1000)
-      }) * 1000
-    }
-
-    let uptime = clockString(_uptime)
-    let muptimeStr = clockString(muptime)
+    let uptime = clockString(process.uptime() * 1000)
     let wib = moment.tz('Europe/Rome').format('HH:mm:ss')
-    let mode = global.opts?.self ? 'Privato' : 'Pubblico'
-    let _package = JSON.parse(await promises.readFile(join(__dirname, '../package.json')).catch(_ => ({}))) || {}
-
+    
     // ----------------- DATI UTENTE -----------------
     let user = global.db.data.users[m.sender] || {}
-    let { age = 0, exp = 0, limit = 10, level = 1, role = 'Utente', registered = false, eris = 0, premiumTime = 0 } = user
+    let { exp = 0, level = 1, role = 'Utente', eris = 0, limit = 10 } = user
     let { min, xp, max } = xpRange(level, global.multiplier || 1)
     let name = await conn.getName(m.sender)
-    let prems = premiumTime > 0 ? '💎 Premium' : '👤 Utente comune'
-    let totalreg = Object.keys(global.db.data.users).length
-    let rtotalreg = Object.values(global.db.data.users).filter(u => u.registered).length
+    let prems = user.premiumTime > 0 ? '💎 Premium' : '👤 Utente comune'
 
     // ----------------- PLUGIN HELP -----------------
     let help = Object.values(global.plugins)
@@ -69,67 +58,44 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname, args, command }) => {
         tags: Array.isArray(p.tags) ? p.tags : [p.tags],
         prefix: 'customPrefix' in p,
         limit: p.limit,
-        premium: p.premium,
-        enabled: !p.disabled
+        premium: p.premium
       }))
 
-    // raggruppa plugin per tag
     let groups = {}
     for (let tag in tags) {
       groups[tag] = help.filter(menu => menu.tags && menu.tags.includes(tag) && menu.help[0])
     }
 
-    // ----------------- COSTRUZIONE MENU -----------------
-    let before = conn.menu?.before || defaultMenu.before
-    let header = conn.menu?.header || defaultMenu.header
-    let body = conn.menu?.body || defaultMenu.body
-    let footer = conn.menu?.footer || defaultMenu.footer
-    let after = conn.menu?.after || defaultMenu.after
-
+    // ----------------- COSTRUZIONE TESTO -----------------
     let _text = [
-      before,
+      defaultMenu.before,
       ...Object.keys(tags).map(tag => {
-        return header.replace(/%category/g, tags[tag]) + '\n' +
+        return defaultMenu.header.replace(/%category/g, tags[tag]) + '\n' +
           [
             ...groups[tag].map(menu =>
-              menu.help.map(cmd => body
+              menu.help.map(cmd => defaultMenu.body
                 .replace(/%cmd/g, menu.prefix ? cmd : _p + cmd)
                 .replace(/%islimit/g, menu.limit ? ' ⚠️' : '')
                 .replace(/%isPremium/g, menu.premium ? ' 💎' : '')
                 .trimEnd()
               ).join('\n')
             ),
-            footer
+            defaultMenu.footer
           ].join('\n')
       }),
-      after
+      defaultMenu.after
     ].join('\n')
 
-    let text = typeof conn.menu === 'string' ? conn.menu : _text
-
-    // ----------------- SOSTITUZIONE VARIABILI -----------------
     let replace = {
-      '%': '%',
-      p: _p,
-      muptime: muptimeStr,
-      me: conn.getName(conn.user.jid),
-      npmname: _package.name,
-      npmdesc: _package.description,
-      version: _package.version,
-      exp: exp - min,
-      maxexp: xp,
-      totalexp: exp,
-      xp4levelup: max - exp,
-      wib, mode, _p, eris, age, name, prems, level, limit,
-      week, date, dateIslamic, time, totalreg, rtotalreg, role,
-      readMore
+      '%': '%', p: _p, eris, name, level, limit, role, week, date, uptime, wib, prems
     }
 
-    text = text.replace(new RegExp(`%(${Object.keys(replace).sort((a, b) => b.length - a.length).join('|')})`, 'g'), (_, name) => '' + replace[name])
+    let text = _text.replace(new RegExp(`%(${Object.keys(replace).sort((a, b) => b.length - a.length).join('|')})`, 'g'), (_, name) => '' + replace[name])
 
-    // ----------------- INVIO MENU -----------------
+    // ----------------- INVIO MENU CON IMMAGINE -----------------
     await conn.sendMessage(m.chat, {
-      text: text.trim(),
+      image: { url: localImg },
+      caption: text.trim(),
       mentions: [m.sender]
     }, { quoted: m })
 
@@ -147,14 +113,9 @@ handler.command = ['menugiochi', 'menugame']
 
 export default handler
 
-// ------------------- UTILS -------------------
-const more = String.fromCharCode(8206)
-const readMore = more.repeat(4001)
-
 function clockString(ms) {
-  if (!ms) return '-- H -- M -- S'
   let h = Math.floor(ms / 3600000)
   let m = Math.floor(ms / 60000) % 60
   let s = Math.floor(ms / 1000) % 60
-  return [h, ' H ', m, ' M ', s, ' S '].map(v => v.toString().padStart(2, '0')).join('')
+  return [h, 'h ', m, 'm ', s, 's'].map(v => v.toString().padStart(2, '0')).join('')
 }
