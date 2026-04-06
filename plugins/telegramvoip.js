@@ -40,33 +40,36 @@ let handler = async (m, { conn, text }) => {
                 let listaNumerata = "";
                 let bottoniDaSalvare = [];
 
+                // ESTRAZIONE SOLO BOTTONI INLINE (Ignora la Reply Keyboard fissa)
                 if (message.replyMarkup && message.replyMarkup.rows) {
-                    let totalCount = 0; // Conta tutti i bottoni reali di Telegram
-                    let displayCount = 1; // Conta solo quelli mostrati su WhatsApp
-                    listaNumerata = "\n\n🌍 *SELEZIONA OPZIONE (Primi 8 ignorati):*\n";
+                    let count = 1;
+                    let haBottoniInline = false;
 
                     for (const row of message.replyMarkup.rows) {
                         for (const button of row.buttons) {
+                            // Verifichiamo che sia un bottone interattivo del messaggio (Inline)
+                            // e non un tasto della tastiera fisica (ReplyKeyboard)
                             if (button.text) {
-                                totalCount++;
+                                if (!haBottoniInline) {
+                                    listaNumerata = "\n\n🔘 *SELEZIONA OPZIONE:*\n";
+                                    haBottoniInline = true;
+                                }
                                 
-                                // SALTA I PRIMI 8 BOTTONI
-                                if (totalCount <= 8) continue;
-
                                 bottoniDaSalvare.push({
                                     msg: message,
                                     btn: button
                                 });
-                                listaNumerata += `*${displayCount}* - ${button.text}\n`;
-                                displayCount++;
+                                listaNumerata += `*${count}* - ${button.text}\n`;
+                                count++;
                             }
                         }
                     }
                 }
 
                 global.tgVoip.currentButtons = bottoniDaSalvare;
+
                 let messaggioFinale = `🤖 *DA TELEGRAM*\n\n${testoCorpo}${listaNumerata}`;
-                
+
                 if (global.tgVoip.conn && global.tgVoip.chatId) {
                     await global.tgVoip.conn.sendMessage(global.tgVoip.chatId, { text: messaggioFinale });
                 }
@@ -109,7 +112,7 @@ handler.before = async (m) => {
         await global.tgVoip.client.sendMessage(targetBotUsername, { message: m.text });
         await m.react('📤');
     } catch (e) {
-        console.error("Errore invio testo:", e);
+        console.error("Errore invio:", e);
     }
 }
 
