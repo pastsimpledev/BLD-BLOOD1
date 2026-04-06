@@ -8,70 +8,72 @@ const apiHash = 'b18441a1ff607e10a989891a5462e627';
 const targetBot = 'Number_Nest_Bot'; 
 const numeroTelefono = '+573215575562';
 
-// SVUOTA QUESTA STRINGA SE CONTINUI A RICEVERE L'ERRORE 401
+// IMPORTANTE: Incolla qui la stringa lunga dopo il primo login riuscito
 let sessionSaved = ""; 
 
 let client = null;
 
 let handler = async (m, { conn }) => {
-  if (m.isGroup) return m.reply('❌ Questo comando funziona solo in *Chat Privata*.')
+  if (m.isGroup) return m.reply('❌ Solo in Chat Privata.')
 
   try {
-    // Se il client esiste ma la sessione è corrotta (Errore 401), resettiamo
-    if (client && !client.connected) {
-        client = null;
-    }
-
-    if (!client) {
-      await m.reply('⏳ *Inizializzazione sessione...* Controlla il terminale se richiesto.')
+    // 1. Inizializzazione Client (Solo se non esiste o è disconnesso)
+    if (!client || !client.connected) {
       client = new TelegramClient(new StringSession(sessionSaved), apiId, apiHash, {
         connectionRetries: 5,
       });
 
+      // Questo blocco invia il codice a Telegram SOLO SE NECESSARIO
       await client.start({
         phoneNumber: async () => numeroTelefono,
         password: async () => await input.text("Inserisci Password 2FA (se attiva): "),
         phoneCode: async () => await input.text("Inserisci il codice ricevuto su Telegram: "),
-        onError: (err) => console.log("Errore client:", err),
+        onError: (err) => console.log("Errore login:", err),
       });
 
-      // Salva la nuova sessione nel log
-      console.log("✅ NUOVA SESSIONE GENERATA! COPIALA QUI SOTTO:");
+      console.log("✅ SESSIONE TELEGRAM AVVIATA CON SUCCESSO!");
+      console.log("Copia questa stringa in 'sessionSaved' per non ricevere più codici:");
       console.log(client.session.save());
-      
-      // Attiviamo l'ascoltatore
+
+      // 2. Configurazione Ascolto (Relay) - Impostata una sola volta
       client.addEventHandler(async (event) => {
-        const message = event.message;
-        try {
-          const sender = await message.getSender();
-          if (sender && sender.username === targetBot) {
-            let contenuto = message.message || " [Contenuto Multimediale] ";
-            await conn.sendMessage(m.chat, {
-              text: `🤖 *RISPOSTA DA @${targetBot}*\n\n${contenuto}`,
-              contextInfo: {
-                forwardingScore: 999,
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                  newsletterJid: '120363232743845068@newsletter',
-                  newsletterName: "✧ 𝙱𝙻𝙳-𝙱𝙾𝚃 𝚅𝙾𝙸𝙿 𝚁𝙴𝙻𝙰𝚈 ✧"
+        if (event && event.message) {
+          const message = event.message;
+          try {
+            const sender = await message.getSender();
+            if (sender && sender.username === targetBot) {
+              let contenuto = message.text || " [Contenuto Multimediale] ";
+              await conn.sendMessage(m.chat, {
+                text: `🤖 *RISPOSTA DA @${targetBot}*\n\n${contenuto}`,
+                contextInfo: {
+                  forwardingScore: 999,
+                  isForwarded: true,
+                  forwardedNewsletterMessageInfo: {
+                    newsletterJid: '120363232743845068@newsletter',
+                    newsletterName: "✧ 𝙱𝙻𝙳-𝙱𝙾𝚃 𝚅𝙾𝙸𝙿 𝚁𝙴𝙻𝙰𝚈 ✧"
+                  }
                 }
-              }
-            });
-          }
-        } catch (err) { console.error("Errore Relay:", err); }
+              });
+            }
+          } catch (e) { /* Messaggio di sistema ignora */ }
+        }
       });
     }
 
-    // Invia /start al bot
+    // 3. Azione: Invia /start al bot target
     await client.sendMessage(targetBot, { message: '/start' });
     await m.react('📡')
+    
+    // Messaggio di feedback su WhatsApp
+    if (!sessionSaved && client.session.save()) {
+        m.reply("✅ *Connesso!* Ho inviato `/start`.\n\n_Consiglio: controlla la console del server e salva la session_string nel codice per evitare nuovi codici in futuro._")
+    }
 
   } catch (e) {
     console.error(e)
-    // Se l'errore è 401, avvisa l'utente di resettare la sessione
     if (e.message.includes('401')) {
-        client = null; // Resetta il client locale
-        m.reply('❌ *Sessione Scaduta/Non Valida.*\nHo resettato la connessione. Per favore, digita di nuovo `.voip` e inserisci il nuovo codice nel terminale.')
+        client = null;
+        m.reply('❌ Sessione scaduta. Digita di nuovo `.voip` per ricevere un nuovo codice.')
     } else {
         m.reply(`❌ *ERRORE:* ${e.message}`)
     }
