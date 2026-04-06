@@ -4,6 +4,9 @@ import { xpRange } from '../lib/levelling.js'
 import moment from 'moment-timezone'
 import os from 'os'
 
+// --- PERCORSO IMMAGINE ---
+const localImg = join(process.cwd(), 'menu-euro.jpeg');
+
 const defaultMenu = {
   before: `
 ┎━━━━━━━━━━━━━━━━━━━┑
@@ -30,12 +33,13 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname, args, command}) => {
   }
 
   try {
-    let d = new Date(new Date() + 3600000)
-    let locale = 'it'
+    await conn.sendPresenceUpdate('composing', m.chat)
+    
+    let d = new Date(new Date().getTime() + 3600000)
     let _uptime = process.uptime() * 1000
     let uptime = clockString(_uptime)
-    
-    let user = global.db.data.users[m.sender]
+
+    let user = global.db.data.users[m.sender] || {}
     let { level, role, eris } = user
     let name = await conn.getName(m.sender)
 
@@ -71,11 +75,12 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname, args, command}) => {
 
     let text = _text.replace(new RegExp(`%(${Object.keys(replace).sort((a, b) => b.length - a.length).join`|`})`, 'g'), (_, name) => '' + replace[name])
 
+    await m.react('💳')
+
+    // --- INVIO COME IMMAGINE (SOSTITUITO VIDEO) ---
     await conn.sendMessage(m.chat, {
-      video: { url: './media/menu/menu4.mp4' },
+      image: { url: localImg },
       caption: text.trim(),
-      gifPlayback: true,
-      mimetype: 'video/mp4',
       contextInfo: {
         mentionedJid: [m.sender],
         forwardedNewsletterMessageInfo: {
@@ -85,11 +90,9 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname, args, command}) => {
       }
     }, { quoted: m })
 
-    await m.react('💳')
-
   } catch (e) {
     console.error(e)
-    conn.reply(m.chat, '❌ Error in Core System.', m)
+    conn.reply(m.chat, '❌ Error in Core System: Check if menu-euro.jpeg exists.', m)
   }
 }
 
