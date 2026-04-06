@@ -72,7 +72,7 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
     let replace = { '%': '%', p: _p, uptime, name, totalreg };
     let text = _text.replace(new RegExp(`%(${Object.keys(replace).sort((a, b) => b.length - a.length).join('|')})`, 'g'), (_, name) => '' + replace[name]);
 
-    // SISTEMA BOTTONI NATIVI (Protocollo richiesto)
+    // --- COSTRUZIONE BOTTONI NATIVI (VISIBILI SU IOS) ---
     const buttons = [
       {
         name: 'single_select',
@@ -80,31 +80,31 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
           title: '💠 APRI MODULI',
           sections: [
             {
-              title: "🛡️ SISTEMA & GIOCHI",
+              title: "🛡️ PROTEZIONE & GIOCHI",
               rows: [
-                { title: "MENU SICUREZZA", id: _p + "attiva" },
-                { title: "MENU GIOCHI", id: _p + "menugiochi" }
+                { title: "🛡️ MENU SICUREZZA", id: _p + "attiva" },
+                { title: "🎮 MENU GIOCHI", id: _p + "menugiochi" }
               ]
             },
             {
               title: "🤖 INTELLIGENZA & GRUPPO",
               rows: [
-                { title: "MENU IA", id: _p + "menuia" },
-                { title: "MENU GRUPPO", id: _p + "menugruppo" }
+                { title: "🤖 MENU IA", id: _p + "menuia" },
+                { title: "👥 MENU GRUPPO", id: _p + "menugruppo" }
               ]
             },
             {
               title: "📥 DOWNLOAD & TOOLS",
               rows: [
-                { title: "MENU DOWNLOAD", id: _p + "menudownload" },
-                { title: "MENU STRUMENTI", id: _p + "menustrumenti" }
+                { title: "📥 MENU DOWNLOAD", id: _p + "menudownload" },
+                { title: "🛠️ MENU STRUMENTI", id: _p + "menustrumenti" }
               ]
             },
             {
               title: "👑 PREMIUM & OWNER",
               rows: [
-                { title: "MENU PREMIUM", id: _p + "menupremium" },
-                { title: "MENU CREATORE", id: _p + "menucreatore" }
+                { title: "⭐ MENU PREMIUM", id: _p + "menupremium" },
+                { title: "👨‍💻 MENU CREATORE", id: _p + "menucreatore" }
               ]
             }
           ]
@@ -112,13 +112,28 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
       }
     ];
 
-    await conn.sendMessage(m.chat, {
-      image: { url: MENU_IMAGE_URL },
-      caption: text.trim(),
-      footer: '𝖇𝖑𝖔𝖔𝖉𝖇𝖔𝖙',
-      interactiveButtons: buttons
-    }, { quoted: m });
+    // Messaggio Interattivo Nativo
+    const msg = {
+        viewOnceMessage: {
+            message: {
+                interactiveMessage: {
+                    header: {
+                        hasVideoMessage: false,
+                        hasCards: false,
+                        imageMessage: (await conn.getFile(MENU_IMAGE_URL)).data,
+                        title: ""
+                    },
+                    body: { text: text.trim() },
+                    footer: { text: "𝖇𝖑𝖔𝖔𝖉𝖇𝖔𝖙" },
+                    nativeFlowMessage: {
+                        buttons: buttons
+                    }
+                }
+            }
+        }
+    };
 
+    await conn.relayMessage(m.chat, msg, { messageId: m.key.id });
     await m.react('💠');
 
   } catch (e) {
