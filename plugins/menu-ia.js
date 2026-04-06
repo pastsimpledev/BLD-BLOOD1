@@ -1,4 +1,8 @@
 import { xpRange } from '../lib/levelling.js'
+import { join } from 'path'
+
+// --- PERCORSO IMMAGINE ---
+const localImg = join(process.cwd(), 'menu-ia.jpeg');
 
 const emojicategoria = {
   iatesto: '📝',
@@ -11,8 +15,6 @@ let tags = {
   'iaaudio': '╭ *`𝐈𝐀 𝐀𝐔𝐃𝐈𝐎`* ╯',
   'iaimmagini': '╭ *`𝐈𝐀 𝐈𝐌𝐌𝐀𝐆𝐈𝐍𝐈`* ╯'
 }
-
-const mediaFile = './media/menu/varebot.mp4'
 
 const defaultMenu = {
   before: `╭⭒─ׄ─⊱ *𝐌𝐄𝐍𝐔 - IA* ⊰
@@ -29,8 +31,9 @@ const defaultMenu = {
 
 let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
   try {
+    await conn.sendPresenceUpdate('composing', m.chat)
+    
     let { level, exp, role } = global.db.data.users[m.sender] || {}
-    let { min, xp, max } = xpRange(level || 0, global.multiplier || 1)
     let name = await conn.getName(m.sender) || 'Utente'
     let d = new Date()
     let locale = 'it'
@@ -79,33 +82,27 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
       .replace(/%uptime/g, uptime)
       .replace(/%totalreg/g, totalreg)
 
+    // --- INVIO COME IMMAGINE (SOSTITUITO VIDEO) ---
     await conn.sendMessage(m.chat, {
-      video: { url: mediaFile },
+      image: { url: localImg },
       caption: text.trim(),
-      gifPlayback: true,
       contextInfo: {
         mentionedJid: [m.sender],
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
-          newsletterJid: '120363232743511111@newsletter',
-          newsletterName: "⋆｡°✩ Menu IA ✩°｡⋆",
+          newsletterJid: '120363232743845068@newsletter',
+          newsletterName: "⋆｡°✩ BLD-BOT AI System ✩°｡⋆",
           serverMessageId: -1
         },
-        forwardingScore: 999,
-        externalAdReply: {
-          title: 'VareBot AI System',
-          body: 'Menu Intelligente',
-          thumbnailUrl: 'https://i.imgur.com/your-image.jpg', // Puoi cambiare questo link
-          sourceUrl: 'https://github.com',
-          mediaType: 1,
-          renderLargerThumbnail: false
-        }
+        forwardingScore: 999
       }
     }, { quoted: m })
 
+    await m.react('🧠')
+
   } catch (e) {
     console.error(e)
-    conn.reply(m.chat, '❎ Si è verificato un errore nel menu IA.', m)
+    conn.reply(m.chat, '❌ Errore nel caricamento del menu IA. Verifica il file menu-ia.jpeg.', m)
   }
 }
 
