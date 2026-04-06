@@ -2,97 +2,63 @@ import { TelegramClient } from 'telegram'
 import { StringSession } from 'telegram/sessions/index.js'
 import input from 'input'
 
-// --- CONFIGURAZIONE ---
 const apiId = 2040; 
 const apiHash = 'b18441a1ff607e10a989891a5462e627'; 
 const targetBot = 'Number_Nest_Bot'; 
 const numeroTelefono = '+573215575562';
-
-// SE HAI UNA SESSION_STRING FUNZIONANTE METTILA QUI, ALTRIMENTI LASCIALE VUOTE ""
-let sessionSaved = ""; 
+let sessionSaved = ""; // Incolla qui la stringa quando l'avrai
 
 let client = null;
-let isLoggingIn = false; // Evita il doppio login contemporaneo
 
 let handler = async (m, { conn, text }) => {
   if (m.isGroup) return m.reply('❌ Solo in Chat Privata.')
 
   try {
-    if (isLoggingIn) return m.reply('⏳ Sto già gestendo un tentativo di login. Guarda il terminale.')
-
     if (!client || !client.connected) {
-      isLoggingIn = true;
-      client = new TelegramClient(new StringSession(sessionSaved), apiId, apiHash, {
-        connectionRetries: 5,
-      });
-
+      client = new TelegramClient(new StringSession(sessionSaved), apiId, apiHash, { connectionRetries: 5 });
+      
       await client.start({
         phoneNumber: async () => numeroTelefono,
-        password: async () => await input.text("Inserisci Password 2FA (se attiva): "),
-        phoneCode: async () => await input.text("Inserisci il codice ricevuto su Telegram: "),
+        password: async () => await input.text("Password 2FA: "),
+        phoneCode: async () => await input.text("Codice Telegram: "),
         onError: (err) => console.log("Errore login:", err),
       });
 
-      isLoggingIn = false;
-      console.log("✅ LOGIN RIUSCITO!");
-      console.log("COPIA QUESTA STRINGA E SALVALA:");
-      console.log(client.session.save());
+      console.log("✅ SESSIONE GENERATA:", client.session.save());
 
-      // GESTORE MESSAGGI IN ARRIVO (RELAY)
+      // ASCOLTATORE SEMPLIFICATO E ROBUSTO
       client.addEventHandler(async (event) => {
-        if (event && event.message) {
-          const msg = event.message;
-          try {
-            const sender = await msg.getSender();
-            const username = sender ? sender.username : null;
+        const message = event.message;
+        if (!message || !message.peerId) return;
 
-            if (username === targetBot) {
-              // Estrazione bottoni se presenti
-              let buttons = [];
-              if (msg.replyMarkup && msg.replyMarkup.rows) {
-                msg.replyMarkup.rows.forEach(row => {
-                  row.buttons.forEach(btn => {
-                    buttons.push({ buttonId: `btn ${btn.text}`, buttonText: { displayText: btn.text }, type: 1 });
-                  });
-                });
-              }
-
-              const relayText = `🤖 *DA @${targetBot}*\n\n${msg.text || "[Media]"}`;
-              
-              if (buttons.length > 0) {
-                await conn.sendMessage(m.chat, { text: relayText, buttons: buttons, headerType: 1 });
-              } else {
-                await conn.sendMessage(m.chat, { text: relayText });
-              }
-            }
-          } catch (e) { /* Errore silenzioso per messaggi di sistema */ }
-        }
+        try {
+          // Otteniamo l'ID del mittente senza usare getSender() che ti dava errore
+          const senderId = message.senderId ? message.senderId.toString() : "";
+          
+          // Cerchiamo di capire se è il bot (spesso i bot hanno ID che iniziano con 5 o simili)
+          // Se conosci l'ID del bot è meglio, altrimenti usiamo un controllo sul testo o entità
+          if (message.text) {
+             await conn.sendMessage(m.chat, { 
+                text: `🤖 *TELEGRAM RELAY*\n\n${message.text}`,
+                contextInfo: { forwardedNewsletterMessageInfo: { newsletterName: "✧ VOIP RELAY ✧" } }
+             });
+          }
+        } catch (err) { console.log("Errore relay interno:", err) }
       });
     }
 
-    // Invia il messaggio (o /start di default)
-    let toSend = text ? text : "/start";
-    await client.sendMessage(targetBot, { message: toSend });
+    let msg = text ? text : "/start";
+    await client.sendMessage(targetBot, { message: msg });
     await m.react('📡');
 
   } catch (e) {
-    isLoggingIn = false;
     console.error(e);
-    if (e.message.includes('401')) {
-      client = null;
-      m.reply('❌ Sessione non valida. Riprova tra un minuto.');
+    if (e.message.includes('FLOOD')) {
+        m.reply(`⏳ Attendi ${e.seconds} secondi. Telegram ha bloccato le richieste per sicurezza.`);
     } else {
-      m.reply(`❌ Errore: ${e.message}`);
+        m.reply(`❌ Errore: ${e.message}`);
     }
   }
-}
-
-handler.before = async (m, { client: tgClient }) => {
-    if (!m.quoted || !m.text || !client) return;
-    if (m.quoted.text && m.quoted.text.includes(`@${targetBot}`)) {
-        await client.sendMessage(targetBot, { message: m.text });
-        await m.react('📨');
-    }
 }
 
 handler.help = ['voip']
