@@ -25,42 +25,12 @@ const defaultMenu = {
  │ 👥 *Total Users:* %totalreg
  └───────────────────
  
- *SELEZIONA UN MODULO OPERATIVO:*
+ *Seleziona un modulo operativo:*
 `.trimStart(),
   header: '      ⋆｡˚『 %category 』˚｡⋆\n╭',
   body: '*│ ➢* 『%emoji』 %cmd',
   footer: '*╰━━━━━━━──────━━━━━━━*\n',
-  after: `
-%readMore
-*┍━━━━━〔 📂 TUTTI I MENU 〕━━━━━┑*
-
-🛡️ *.%pattiva*
-_(Sicurezza e Protezione)_
-
-🎮 *.%pmenugiochi*
-_(Games e Leveling)_
-
-🤖 *.%pmenuia*
-_(Intelligenza Artificiale)_
-
-👥 *.%pmenugruppo*
-_(Gestione Membri)_
-
-📥 *.%pmenudownload*
-_(Social Downloader)_
-
-🛠️ *.%pmenustrumenti*
-_(Utility e Tools)_
-
-⭐ *.%pmenupremium*
-_(Funzioni Exclusive)_
-
-👨‍💻 *.%pmenucreatore*
-_(Pannello Owner)_
-
-*┕━━━━━━━──ׄ──ׅ──ׄ──━━━━━━━┙*
-
-_Powered by BLD-BOT Interface_`,
+  after: `_Powered by BLD-BOT Interface_`,
 }
 
 const MENU_IMAGE_URL = 'https://i.ibb.co/hJW7WwxV/varebot.jpg';
@@ -99,47 +69,71 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
       defaultMenu.after
     ].join('\n');
 
-    let replace = {
-      '%': '%',
-      p: _p,
-      uptime: uptime,
-      name: name,
-      totalreg: totalreg,
-      readMore: readMore 
-    };
-
+    let replace = { '%': '%', p: _p, uptime, name, totalreg };
     let text = _text.replace(new RegExp(`%(${Object.keys(replace).sort((a, b) => b.length - a.length).join('|')})`, 'g'), (_, name) => '' + replace[name]);
 
-    // Invio unico con anteprima link per massimizzare la visibilità su iOS
+    // --- COSTRUZIONE BOTTONI (8 MENU) ---
+    // Usiamo il formato 'list' perché è l'unico che permette più di 3 tasti in un unico blocco
+    const sections = [
+      {
+        title: "🛡️ PROTEZIONE & GIOCHI",
+        rows: [
+          { title: "Menu Sicurezza", rowId: _p + "attiva", description: "Protezione Gruppo" },
+          { title: "Menu Giochi", rowId: _p + "menugiochi", description: "Games & Leveling" }
+        ]
+      },
+      {
+        title: "🤖 INTELLIGENZA & GRUPPO",
+        rows: [
+          { title: "Menu IA", rowId: _p + "menuia", description: "Intelligenza Artificiale" },
+          { title: "Menu Gruppo", rowId: _p + "menugruppo", description: "Gestione Membri" }
+        ]
+      },
+      {
+        title: "📂 UTILITY & DOWNLOAD",
+        rows: [
+          { title: "Menu Download", rowId: _p + "menudownload", description: "Social Downloader" },
+          { title: "Menu Strumenti", rowId: _p + "menustrumenti", description: "Tools vari" }
+        ]
+      },
+      {
+        title: "👑 AMMINISTRAZIONE",
+        rows: [
+          { title: "Menu Premium", rowId: _p + "menupremium", description: "Funzioni Pro" },
+          { title: "Menu Creatore", rowId: _p + "menucreatore", description: "Pannello Owner" }
+        ]
+      }
+    ];
+
+    const listMessage = {
+      text: text.trim(),
+      footer: "B L D - B O T  S Y S T E M",
+      title: " ",
+      buttonText: "💠 CLICCA PER I MENU",
+      sections
+    };
+
+    // Invio forzato con immagine e lista (compatibile iOS/Android)
     await conn.sendMessage(m.chat, {
       image: { url: MENU_IMAGE_URL },
       caption: text.trim(),
-      contextInfo: {
-        externalAdReply: {
-          title: "💠 𝐁𝐋𝐃 - 𝐂𝐄𝐍𝐓𝐑𝐀𝐋 𝐇𝐔𝐁 💠",
-          body: "SISTEMA OPERATIVO ATTIVO",
-          mediaType: 1,
-          renderLargerThumbnail: true,
-          thumbnailUrl: MENU_IMAGE_URL,
-          sourceUrl: 'https://whatsapp.com/channel/0029Vajp6GvK0NBoP7WlR81G'
-        }
-      }
+      footer: "Seleziona una categoria",
+      buttonText: "💠 APRI MENU",
+      sections,
+      viewOnce: true // CRITICO: Forza la visualizzazione su iPhone
     }, { quoted: m });
 
     await m.react('💠');
 
   } catch (e) {
     console.error(e);
+    conn.reply(m.chat, "Errore nell'invio dei bottoni.", m);
   }
 };
 
 handler.help = ['menu'];
 handler.command = ['menu', 'help'];
 export default handler;
-
-// Caratteri invisibili per il "Leggi tutto" (fondamentali per i bottoni testuali)
-const more = String.fromCharCode(8206);
-const readMore = more.repeat(4001);
 
 function clockString(ms) {
   let h = Math.floor(ms / 3600000);
