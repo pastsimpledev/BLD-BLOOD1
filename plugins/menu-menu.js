@@ -3,39 +3,39 @@ import { join } from 'path'
 import moment from 'moment-timezone'
 
 const emojicategoria = {
-  info: '💉',
-  main: '🩸'
+  info: 'ℹ️',
+  main: '💠'
 }
 
 let tags = {
-  'main': '╭ *`𝐂𝐘𝐁𝐄𝐑 𝐁𝐋𝐎𝐎𝐃`* ╯',
-  'info': '╭ *`𝐃𝐀𝐓𝐀 𝐋𝐄𝐀𝐊`* ╯'
+  'main': '╭ *`SYSTEM MAIN`* ╯',
+  'info': '╭ *`DATABASE INFO`* ╯'
 }
 
 const defaultMenu = {
   before: `
 ┏━━━━━━━━━━━━━━━━━━━━┓
-   🩸  *C Y B E R - B L O O D* 🩸
+   💠  *B L D  -  B O T* 💠
 ┗━━━━━━━━━━━━━━━━━━━━┛
  ┌───────────────────
- │ 🫀 *Soggetto:* %name
- │ ⏳ *Attivo da:* %uptime
- │ 🧬 *Nodi Connessi:* %totalreg
+ │ 👤 *User:* %name
+ │ 🕒 *Uptime:* %uptime
+ │ 👥 *Total Users:* %totalreg
  └───────────────────
  
- *⚠️ Iniezione moduli in corso...*
+ *Seleziona un'interfaccia operativa:*
 `.trimStart(),
   header: '      ⋆｡˚『 %category 』˚｡⋆\n╭',
-  body: '*│ ⚡* 『%emoji』%cmd',
-  footer: '*╰━━━━━──ׄ──ׅ──ׄ──━━━━━*\n',
-  after: `_☣️ Sistema operativo instabile..._`,
+  body: '*│ ➢* 『%emoji』 %cmd',
+  footer: '*╰━━━━━━━──────━━━━━━━*\n',
+  after: `_Powered by BLD-BOT Interface_`,
 }
 
 const MENU_IMAGE_URL = 'https://i.ibb.co/hJW7WwxV/varebot.jpg';
 
 let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
   try {
-    let name = await conn.getName(m.sender) || 'Soggetto Ignoto';
+    let name = await conn.getName(m.sender) || 'User';
     let _uptime = process.uptime() * 1000;
     let uptime = clockString(_uptime);
     let totalreg = Object.keys(global.db.data.users).length;
@@ -57,7 +57,7 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
             return menu.help.map(help => {
               return defaultMenu.body
                 .replace(/%cmd/g, menu.prefix ? help : _p + help)
-                .replace(/%emoji/g, emojicategoria[tag] || '💀')
+                .replace(/%emoji/g, emojicategoria[tag] || '🔹')
                 .trim();
             }).join('\n');
           }),
@@ -91,7 +91,7 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
       await conn.sendMessage(m.chat, {
         image: { url: MENU_IMAGE_URL },
         caption: text.trim(),
-        footer: "☣️ BLOOD INTERFACE",
+        footer: "BLD-BOT CENTRAL SYSTEM",
         buttons: buttons,
         headerType: 4
       }, { quoted: m });
@@ -123,18 +123,18 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
         m.chat, 
         "",
         text.trim(),
-        "🩸 APRI DATABASE SANGUE",
+        "💠 APRI LISTA COMANDI",
         MENU_IMAGE_URL,
         sections,
         m
       );
     }
 
-    await m.react('💉');
+    await m.react('💠');
 
   } catch (e) {
     console.error(e)
-    conn.reply(m.chat, '☣️ ERRORE DI SISTEMA: ' + e.message, m)
+    conn.reply(m.chat, '❌ Error: ' + e.message, m)
   }
 };
 
