@@ -8,16 +8,14 @@ let handler = async (m, { conn, text, command, usedPrefix, isOwner }) => {
 
     let mods = global.db.data.chats[chatId].moderatori
 
-    // --- COMANDO .ADDMOD ---
     if (command === 'addmod') {
         let who = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : text ? text.replace(/[^0-9]/g, '') + '@s.whatsapp.net' : null
         if (!who) return m.reply(`Tagga qualcuno per aggiungerlo come moderatore.`)
         if (mods.includes(who)) return m.reply("⚠️ Utente già presente.")
         mods.push(who)
-        return m.reply(`✅ @${who.split('@')[0]} aggiunto ai moderatori!`, null, { mentions: [who] })
+        return m.reply(`✅ @${who.split('@')[0]} aggiunto!\nPuò usare i comandi admin, tranne gestire i ruoli.`, null, { mentions: [who] })
     }
 
-    // --- COMANDO .DELMOD ---
     if (command === 'delmod') {
         let who = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : text ? text.replace(/[^0-9]/g, '') + '@s.whatsapp.net' : null
         if (!who) return m.reply(`Tagga qualcuno per rimuoverlo.`)
@@ -25,7 +23,6 @@ let handler = async (m, { conn, text, command, usedPrefix, isOwner }) => {
         return m.reply(`🗑️ Privilegi rimossi per @${who.split('@')[0]}.`, null, { mentions: [who] })
     }
 
-    // --- COMANDO .LISTANERA ---
     if (command === 'listanera') {
         if (mods.length === 0) return m.reply("📋 Nessun moderatore registrato.")
         let lista = `📋 *LISTA MODERATORI*\n\n`
@@ -34,24 +31,28 @@ let handler = async (m, { conn, text, command, usedPrefix, isOwner }) => {
     }
 }
 
-// --- LOGICA DI FILTRO ---
-handler.before = async function (m, { isOwner }) {
+// --- LOGICA DI FILTRO AVANZATA ---
+handler.before = async function (m) {
     if (!m.isGroup || !global.db.data.chats[m.chat]?.moderatori) return
 
     let mods = global.db.data.chats[m.chat].moderatori
-    let isMod = mods.includes(m.sender)
+    if (!mods.includes(m.sender)) return // Se non è mod, non fare nulla
 
-    if (isMod) {
-        // 1. Diamo i permessi per i comandi admin generici
+    // Lista dei comandi proibiti ai moderatori (aggiungi qui quelli che vuoi bloccare)
+    const comandiProibiti = /^(promote|demote|admin|unadmin|addadmin|deladmin)/i
+    
+    // Estraiamo il comando dal testo (es: .promote -> promote)
+    let body = m.text ? m.text.trim() : ''
+    let isCommand = body.startsWith('.') || body.startsWith('/') || body.startsWith('!')
+    let cmd = body.slice(1).split(' ')[0].toLowerCase()
+
+    if (isCommand && comandiProibiti.test(cmd)) {
+        // Se è un comando proibito, NON diamo isAdmin e avvisiamo
+        m.isAdmin = false 
+        return m.reply("🚫 *Azione Fallita*\nI Moderatori non possono promuovere o declassare altri utenti.")
+    } else {
+        // Se è un comando sicuro (kick, link, ecc.), diamo i permessi
         m.isAdmin = true 
-
-        // 2. BLOCCO DI SICUREZZA: Se il comando cerca di modificare i ruoli
-        // Aggiungi qui i nomi dei comandi che danno/tolgono admin (es: promote, demote, admin, unadmin)
-        let comando = m.text.toLowerCase()
-        if (comando.startsWith('.') && /^(promote|demote|admin|unadmin|dareadmin|togliereadmin)/i.test(comando.slice(1))) {
-            m.isAdmin = false // Revociamo temporaneamente lo status per questo messaggio
-            return m.reply("🚫 *Accesso Negato*\nCome Moderatore non hai il permesso di gestire i ruoli degli utenti (Promote/Demote).")
-        }
     }
 }
 
