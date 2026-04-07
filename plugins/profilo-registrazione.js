@@ -10,29 +10,24 @@ let handler = async function (m, { conn, text, usedPrefix, command }) {
     let target = m.sender;
     if (isOwner && (m.mentionedJid?.length || m.quoted)) {
         target = m.mentionedJid?.[0] || m.quoted?.sender;
-        if (!target) return m.reply('『 ⚠️ 』- `Impossibile trovare l\'utente da registrare.`');
+        if (!target) return m.reply('『 ⚠️ 』 *ERRORE* | Soggetto non identificato.');
     }
 
     let user = global.db.data.users[target] || (global.db.data.users[target] = {});
-    let name2 = await conn.getName(target);
-
+    
     let perfil = await conn.profilePictureUrl(target, 'image').catch(async _ => {
-        const fallback = [
-            'https://i.ibb.co/BKHtdBNp/default-avatar-profile-icon-1280x1280.jpg',
-        ];
-        return fallback[Math.floor(Math.random() * fallback.length)];
+        return 'https://i.ibb.co/BKHtdBNp/default-avatar-profile-icon-1280x1280.jpg';
     });
 
     if (user.registered) {
         const timeSinceReg = moment(user.regTime).fromNow();
         return conn.sendMessage(m.chat, {
-            text: `『 ❌ 』- *${target === m.sender ? 'Sei' : 'Questo utente è'} già registrato!*\n『 📅 』 Registrazione: ${timeSinceReg}\n\n*Per resettare usa:* _${usedPrefix}unreg_`,
+            text: `⚠️ *ATTENZIONE* ⚠️\n\nL'utente è già schedato nel sistema.\n『 ⏳ 』 *Data ingresso:* ${timeSinceReg}\n\n_Per ricominciare usa: ${usedPrefix}unreg_`,
             contextInfo: {
                 externalAdReply: {
-                    title: '🔄 Registrazione già esistente',
-                    body: 'Usa il comando unreg per cancellarti',
+                    title: 'SISTEMA MALAVITA',
+                    body: 'Identità già presente.',
                     thumbnailUrl: perfil,
-                    sourceUrl: null,
                     mediaType: 1,
                     renderLargerThumbnail: false
                 }
@@ -41,35 +36,26 @@ let handler = async function (m, { conn, text, usedPrefix, command }) {
     }
 
     if (!Reg.test(text))  {
-        return m.reply(`─ׄ─⭒『 \`FORMATO ERRATO\` 』⭒─ׄ─\n\n
-『 ✅ 』 \`Formato:\` *${usedPrefix + command} nome anni*
-『 📝 』 \`Esempio:\` *${usedPrefix + command} Blood 17*`
-        );
+        return m.reply(`╔════════════════════╗\n║   ❌ *FORMATO ERRATO* ❌   \n╚════════════════════╝\n\n『 📝 』 *Usa:* \`${usedPrefix + command} nome anni\`\n『 💡 』 *Esempio:* \`${usedPrefix + command} Blood 17\``);
     }
 
     let [_, name, age] = text.match(Reg);
-    if (!name) return m.reply('『 ❗ 』 \`\`*Il nome non può essere vuoto.*');
-    if (!age) return m.reply('『 ❗ 』 \`L\'età non può essere vuota.\`');
-    if (name.length > 32) return m.reply('『 ❗ 』 \`Il nome è troppo lungo (max 32 caratteri).\`');
-    if (name.includes('@')) return m.reply('『 ❗ 』 \`Il nome non può contenere "@".\`');
+    if (!name) return m.reply('『 ❗ 』 Inserisci un nome valido.');
+    if (!age) return m.reply('『 ❗ 』 Inserisci l\'età.');
+    if (name.length > 32) return m.reply('『 ❗ 』 Nome troppo lungo.');
 
     age = parseInt(age);
-    if (age > 69 || age < 10) return m.reply('『 ❗ 』 \`L\'età inserita non è valida (10-69).\`');
+    if (age > 69 || age < 10) return m.reply('『 ❗ 』 Età non valida (10-69).');
 
-    const initialStats = {
-        hp: 100,
-        level: 1,
-        xp: 0,
-        euro: 10,
-    };
-
+    // Salvataggio dati
     user.name = name.trim();
     user.age = age;
     user.regTime = +new Date();
     user.registered = true;
     user.euro = (user.euro || 0) + 15;
     user.exp = (user.exp || 0) + 245;
-    Object.assign(user, initialStats);
+    user.hp = 100;
+    user.level = 1;
 
     await global.db.write();
 
@@ -77,29 +63,34 @@ let handler = async function (m, { conn, text, usedPrefix, command }) {
     const registrationTime = moment().format('DD/MM/YYYY');
 
     let regbot = `
-ㅤㅤ⋆｡˚『 ╭ \`REGISTRAZIONE\` ╯ 』˚｡⋆\n╭\n│
-│ 『 👤 』 \`Nome:\` *${name}*
-│ 『 🎂 』 \`Età:\` *${age} anni*
-│ 『 📅 』 \`Data:\` *${registrationTime}*
-│ 『 🆔 』 \`ID:\` *${sn.slice(0, 8).toUpperCase()}*
-│
-╟─ׄ─⭒『 \`RICOMPENSE\` 』⭒─ׄ─
-│
-│ 『 🪙 』 \`Euro:\` *+15*
-│ 『 🌟 』 \`Exp:\` *+245*
-│ 
-╰⭒─ׄ─ׅ─ׄ『  ℹ️  \`INFO\`  』─ׄ─ׅ─ׄ
+   ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+   ┃   ⚔️  *NÜÖVÖ ÄFFÏLÏÄTÖ* ⚔️   ┃
+   ┗━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+   『 👤 』 *NOME:* ${name}
+   『 🎂 』 *ETÀ:* ${age} Anni
+   『 📅 』 *DATA:* ${registrationTime}
+   『 🆔 』 *ID:* ${sn.slice(0, 8).toUpperCase()}
+
+   ┈──────────────────┈
+      💰 *BÖNÜS DÏ BËNVËNÜTÖ*
+   ┈──────────────────┈
+   『 🪙 』 *Euro:* +15
+   『 🌟 』 *Exp:* +245
+
+   _Benvenuto nella famiglia, rispetta il codice._
 `;
+
     await conn.sendMessage(m.chat, {
         text: regbot,
         contextInfo: {
             mentionedJid: [target],
             externalAdReply: {
-                title: 'Mbaruzzo che entra nella malavita!',
-                body: `Benvenuto/a ${name}!`,
+                title: 'MBARUZZO CHE ENTRA NELLA MALAVITA!',
+                body: `Rispetto per ${name}!`,
                 thumbnailUrl: perfil,
                 mediaType: 1,
-                renderLargerThumbnail: false,
+                renderLargerThumbnail: true,
                 showAdAttribution: false,
                 sourceUrl: null
             }
