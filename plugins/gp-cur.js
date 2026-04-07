@@ -79,7 +79,7 @@ async function getTopArtists(username) {
 const handler = async (m, { conn, usedPrefix, text, command }) => {
 
   if (command === 'setuser') {
-    if (!text) return m.reply(`🩸 *BLOOD BOT*\n\n💡 _Scrivi:_ ${usedPrefix}setuser il_tuo_username`)
+    if (!text) return m.reply(`🩸 *𝐁𝐋𝐎𝐎𝐃 𝐁𝐎𝐓*\n\n💡 _Scrivi:_ ${usedPrefix}setuser nome_utente`)
     setLastfmUsername(m.sender, text.trim())
     return m.reply(`✅ *Profilo Last.fm collegato con successo!*`)
   }
@@ -103,57 +103,32 @@ const handler = async (m, { conn, usedPrefix, text, command }) => {
     const userInfo = await getUserInfo(username)
     const likes = getLikesReceived(username)
 
-    let caption = `┏━━━━━━━━━━━━━━━━━━━━┓\n`
-    caption += `   🎵  *𝐁𝐋𝐎𝐎𝐃 𝐋𝐀𝐒𝐓.𝐅𝐌* 🎵\n`
-    caption += `┗━━━━━━━━━━━━━━━━━━━━┛\n\n`
-    caption += `👤 *Utente:* ${username}\n`
-    caption += `📀 *Stato:* ${nowPlaying ? '_In riproduzione..._' : '_Ultimo ascolto_'}\n\n`
-    caption += `📌 *Titolo:* ${title}\n`
-    caption += `🎤 *Artista:* ${artist}\n`
-    caption += `💿 *Album:* ${album}\n\n`
-    caption += `📊 *Dati Utente:*\n`
-    caption += `├ Scrobble brano: ${info?.userplaycount || 0}\n`
-    caption += `├ Scrobble totali: ${userInfo?.playcount || 0}\n`
-    caption += `└ ❤️ Like ricevuti: ${likes}\n\n`
-    caption += `*𝐁𝐋𝐎𝐎𝐃 𝐁𝐎𝐓 • 𝟤𝟢𝟤𝟨*`
+    let infoMsg = `┏━━━━━━━━━━━━━━━━━━━━┓\n`
+    infoMsg += `   🎧  *𝐁𝐋𝐎𝐎𝐃 𝐋𝐀𝐒𝐓.𝐅𝐌* 🎧\n`
+    infoMsg += `┗━━━━━━━━━━━━━━━━━━━━┛\n\n`
+    infoMsg += `◈ 👤 *𝗨𝘁𝗲𝗻𝘁𝗲:* ${username}\n`
+    infoMsg += `◈ 📀 *𝗦𝘁𝗮𝘁𝗼:* ${nowPlaying ? '🔥 _In riproduzione..._' : '🕒 _Ultimo ascolto_'}\n\n`
+    infoMsg += `◈ 📌 *𝗧𝗶𝘁𝗼𝗹𝗼:* ${title}\n`
+    infoMsg += `◈ 🎤 *𝗔𝗿𝘁𝗶𝘀𝘁𝗮:* ${artist}\n`
+    infoMsg += `◈ 💿 *𝗔𝗹𝗯𝘂𝗺:* ${album}\n\n`
+    infoMsg += `◈ 📊 *𝗗𝗮𝘁𝗶:*\n`
+    infoMsg += `├ 📈 Scrobble brano: ${info?.userplaycount || 0}\n`
+    infoMsg += `├ 🌍 Scrobble totali: ${userInfo?.playcount || 0}\n`
+    infoMsg += `└ ❤️ Like ricevuti: ${likes}\n\n`
+    infoMsg += `*𝗦𝗲𝗹𝗲𝘇𝗶𝗼𝗻𝗮 𝘂𝗻'𝗼𝗽𝘇𝗶𝗼𝗻𝗲:*`
 
     const buttons = [
-      {
-        name: "quick_reply",
-        buttonParamsJson: JSON.stringify({
-          display_text: "❤️ LIKE",
-          id: `${usedPrefix}like ${username}`
-        })
-      },
-      {
-        name: "quick_reply",
-        buttonParamsJson: JSON.stringify({
-          display_text: "📥 SCARICA AUDIO",
-          id: `${usedPrefix}playaud ${artist} ${title}`
-        })
-      },
-      {
-        name: "quick_reply",
-        buttonParamsJson: JSON.stringify({
-          display_text: "📝 TESTO",
-          id: `${usedPrefix}testo ${username}`
-        })
-      },
-      {
-        name: "quick_reply",
-        buttonParamsJson: JSON.stringify({
-          display_text: "👑 TOP ARTISTS",
-          id: `${usedPrefix}topartists ${username}`
-        })
-      }
+        { buttonId: `${usedPrefix}playaud ${artist} ${title}`, buttonText: { displayText: '🎵 𝗦𝗖𝗔𝗥𝗜𝗖𝗔 𝗔𝗨𝗗𝗜𝗢' }, type: 1 },
+        { buttonId: `${usedPrefix}like ${username}`, buttonText: { displayText: '❤️ 𝗟𝗜𝗞𝗘' }, type: 1 },
+        { buttonId: `${usedPrefix}topartists ${username}`, buttonText: { displayText: '👑 𝗧𝗢𝗣 𝗔𝗥𝗧𝗜𝗦𝗧𝗦' }, type: 1 }
     ]
 
     return await conn.sendMessage(m.chat, {
-      image: { url: image || 'https://cdn-icons-png.flaticon.com/512/174/174858.png' },
-      caption,
-      footer: 'Seleziona un\'azione',
-      buttons: buttons,
-      headerType: 4
+        image: { url: image || 'https://cdn-icons-png.flaticon.com/512/174/174858.png' },
+        caption: infoMsg,
+        footer: '𝐁𝐋𝐎𝐎𝐃 𝐁𝐎𝐓 • 𝟤𝟢𝟤𝟨',
+        buttons: buttons,
+        headerType: 4
     }, { quoted: m })
   }
 
