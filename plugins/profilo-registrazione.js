@@ -6,7 +6,7 @@ let Reg = /^\s*([\w\s]+)[.| ]+(\d{1,3})\s*$/i;
 
 let handler = async function (m, { conn, text, usedPrefix, command }) {
     const isOwner = global.owner?.includes(m.sender);
-    
+
     let target = m.sender;
     if (isOwner && (m.mentionedJid?.length || m.quoted)) {
         target = m.mentionedJid?.[0] || m.quoted?.sender;
@@ -43,7 +43,7 @@ let handler = async function (m, { conn, text, usedPrefix, command }) {
     if (!Reg.test(text))  {
         return m.reply(`─ׄ─⭒『 \`FORMATO ERRATO\` 』⭒─ׄ─\n\n
 『 ✅ 』 \`Formato:\` *${usedPrefix + command} nome anni*
-『 📝 』 \`Esempio:\` *${usedPrefix + command} sam 17*`
+『 📝 』 \`Esempio:\` *${usedPrefix + command} Blood 17*`
         );
     }
 
@@ -54,7 +54,7 @@ let handler = async function (m, { conn, text, usedPrefix, command }) {
     if (name.includes('@')) return m.reply('『 ❗ 』 \`Il nome non può contenere "@".\`');
 
     age = parseInt(age);
-    if (age > 69 || age < 10) return m.reply('『 ❗ 』 \`L\'età inserita non è valida (5-69).\`');
+    if (age > 69 || age < 10) return m.reply('『 ❗ 』 \`L\'età inserita non è valida (10-69).\`');
 
     const initialStats = {
         hp: 100,
@@ -95,7 +95,7 @@ let handler = async function (m, { conn, text, usedPrefix, command }) {
         contextInfo: {
             mentionedJid: [target],
             externalAdReply: {
-                title: '『 ✅ 』 Mbaruzzo che entra nella malavita!',
+                title: 'Mbaruzzo che entra nella malavita!',
                 body: `Benvenuto/a ${name}!`,
                 thumbnailUrl: perfil,
                 mediaType: 1,
