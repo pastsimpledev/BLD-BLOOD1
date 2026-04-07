@@ -25,7 +25,7 @@ const featureRegistry = [
   { key: 'antigore', store: 'chat', perm: PERM.ADMIN, name: '🚫 Antigore', desc: 'Blocca contenuti splatter' },
   { key: 'modoadmin', store: 'chat', perm: PERM.ADMIN, name: '🛡️ Soloadmin', desc: 'Comandi solo per amministratori' },
   { key: 'ai', store: 'chat', perm: PERM.ADMIN, name: '🧠 IA', desc: 'Intelligenza Artificiale attiva' },
-  { key: 'vocali', store: 'chat', perm: PERM.ADMIN, name: '🎤 Siri', desc: 'Risposte vocali automatiche' },
+  { key: 'vocali', store: 'chat', perm: PERM.ADMIN, name: '🎤 Siri', desc: 'Risponde con audio ai messaggi' },
   { key: 'antivoip', store: 'chat', perm: PERM.ADMIN, name: '📞 Antivoip', desc: 'Blocca numeri non italiani' },
   { key: 'antiLink', store: 'chat', perm: PERM.ADMIN, name: '🔗 Antilink', desc: 'Blocca link WhatsApp' },
   { key: 'antiLinkUni', store: 'chat', perm: PERM.ADMIN, name: '🌍 Antilink Uni', desc: 'Blocca ogni tipo di link/URL' },
@@ -49,8 +49,8 @@ featureRegistry.forEach(f => {
 });
 
 let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isSam }) => {
-  const isEnable = /true|enable|attiva|(turn)?on|1/i.test(command);
-  const isDisable = /disable|disattiva|off|0/i.test(command);
+  // Determinazione dello stato (on/off) basata sul comando usato
+  let isEnable = ['enable', 'attiva', 'on', '1'].includes(command.toLowerCase());
   const userName = m.pushName || 'User';
 
   global.db.data.chats = global.db.data.chats || {};
@@ -59,20 +59,27 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isS
   const botJid = conn.decodeJid(conn.user.jid);
   const bot = global.db.data.settings[botJid] || (global.db.data.settings[botJid] = {});
 
-  if (args.length > 0 && (isEnable || isDisable)) {
+  // --- AZIONE DI ATTIVAZIONE / DISATTIVAZIONE ---
+  if (args[0]) {
     let type = args[0].toLowerCase();
     const feat = aliasMap.get(type);
-    if (!feat) return m.reply(`『 ❌ 』 Modulo *${type}* non trovato.`);
+    
+    if (!feat) return m.reply(`『 ❌ 』 Modulo *${type}* non trovato nel database.`);
 
+    // Controllo permessi
     if (feat.perm === PERM.sam && !isSam) return m.reply('『 ❌ 』 Accesso negato: Solo Blood.');
     if (feat.perm === PERM.OWNER && !isOwner && !isSam) return m.reply('『 ❌ 』 Accesso negato: Solo Owner.');
     if (feat.perm === PERM.ADMIN && m.isGroup && !(isAdmin || isOwner || isSam)) return m.reply('『 ❌ 』 Richiesti permessi Admin.');
 
     const target = feat.store === 'bot' ? bot : chat;
+    
+    // Imposta lo stato (isEnable è true per .attiva, false per .disattiva)
     target[feat.key] = isEnable;
+
     return m.reply(`*〘 📡 BLD-SYSTEM 〙*\n\nModulo: *${feat.name}*\nStato: *${isEnable ? 'ATTIVATO 🟢' : 'DISATTIVATO 🔴'}*`);
   }
 
+  // --- COSTRUZIONE MENU MASTER CONTROL ---
   const getStatus = (f) => (f.store === 'bot' ? bot[f.key] : chat[f.key]) ? '🟢' : '🔴';
 
   let menu = `┎━━━━━━━━━━━━━━━━━━━━┑
