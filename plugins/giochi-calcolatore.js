@@ -1,173 +1,157 @@
 import { createCanvas, loadImage } from 'canvas';
+import fetch from 'node-fetch';
 
 const DEFAULT_AVATAR_URL = 'https://i.ibb.co/jH0VpAv/default-avatar-profile-icon-of-social-media-user-vector.jpg';
 
-function drawStrokedText(ctx, text, x, y) {
+// Helper per testo con bagliore neon
+function drawNeonText(ctx, text, x, y, fontSize, color) {
     ctx.save();
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 8;
-    ctx.lineJoin = 'round';
-    ctx.miterLimit = 2;
+    ctx.font = `bold ${fontSize}px Impact, sans-serif`;
+    ctx.textAlign = 'center';
+    
+    // Bagliore esterno
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 20;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
     ctx.strokeText(text, x, y);
+    
+    // Testo principale
+    ctx.shadowBlur = 0;
     ctx.fillStyle = '#FFFFFF';
     ctx.fillText(text, x, y);
     ctx.restore();
 }
 
-function generateThemedBackground(ctx, width, height, colors) {
-    const gradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width / 1.5);
-    gradient.addColorStop(0, colors[0]);
-    gradient.addColorStop(1, colors[1]);
-
-    ctx.fillStyle = gradient;
+// Genera uno sfondo Tech/Cyberpunk
+function generateCyberBackground(ctx, width, height, colors) {
+    // Gradiente di base profondo
+    const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+    bgGrad.addColorStop(0, '#0a0a0c');
+    bgGrad.addColorStop(1, colors[1]);
+    ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, width, height);
 
-    // Aggiunge delle "stelle" per un effetto più dinamico
-    for (let i = 0; i < 100; i++) {
-        ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.2})`;
-        ctx.beginPath();
-        ctx.arc(Math.random() * width, Math.random() * height, Math.random() * 3 + 1, 0, Math.PI * 2);
-        ctx.fill();
+    // Disegna griglia prospettica
+    ctx.strokeStyle = `${colors[0]}22`;
+    ctx.lineWidth = 2;
+    for (let i = 0; i < width; i += 60) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke();
+    }
+    for (let i = 0; i < height; i += 60) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(width, i); ctx.stroke();
+    }
+
+    // Particelle luminose
+    for (let i = 0; i < 40; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
+        const size = Math.random() * 4;
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, size * 2);
+        grad.addColorStop(0, colors[0]);
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(x, y, size * 2, 0, Math.PI * 2); ctx.fill();
     }
 }
-
 
 async function generateMeterImage({ title, percentage, avatarUrl, description, themeColors }) {
     const width = 1080;
     const height = 1080;
-
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
 
-    // 1. Genera lo sfondo a tema
-    generateThemedBackground(ctx, width, height, themeColors);
+    // 1. Sfondo
+    generateCyberBackground(ctx, width, height, themeColors);
 
-    // Carica solo l'avatar
+    // 2. Caricamento Avatar
     const avatar = await loadImage(avatarUrl).catch(() => loadImage(DEFAULT_AVATAR_URL));
 
-    // Overlay scuro per leggibilità
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    ctx.fillRect(0, 0, width, height);
-
-    // 2. Disegna il titolo
-    ctx.font = 'bold 120px Impact, "Arial Black", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    drawStrokedText(ctx, title, width / 2, 50);
-
-    // 3. Disegna l'avatar
-    const avatarSize = 400;
-    const avatarX = (width - avatarSize) / 2;
-    const avatarY = 220;
+    // 3. Pannello Centrale (Glassmorphism)
     ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = 30;
     ctx.beginPath();
-    ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2, true);
-    ctx.closePath();
-    ctx.clip();
-    ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
+    ctx.roundRect(50, 50, width - 100, height - 100, 60);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
     ctx.restore();
 
+    // 4. Titolo
+    drawNeonText(ctx, title, width / 2, 160, 130, themeColors[0]);
+
+    // 5. Avatar con cerchi Neon
+    const avatarSize = 380;
+    const centerX = width / 2;
+    const centerY = 450;
+
+    // Glow dietro l'avatar
+    const avatarGlow = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, avatarSize / 1.5);
+    avatarGlow.addColorStop(0, `${themeColors[0]}44`);
+    avatarGlow.addColorStop(1, 'transparent');
+    ctx.fillStyle = avatarGlow;
+    ctx.beginPath(); ctx.arc(centerX, centerY, avatarSize / 1.5, 0, Math.PI * 2); ctx.fill();
+
+    ctx.save();
     ctx.beginPath();
-    ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2, true);
-    ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 10;
-    ctx.stroke();
+    ctx.arc(centerX, centerY, avatarSize / 2, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(avatar, centerX - avatarSize / 2, centerY - avatarSize / 2, avatarSize, avatarSize);
+    ctx.restore();
 
-    // 4. Barra di progresso
-    const barWidth = 800;
-    const barHeight = 80;
-    const barX = (width - barWidth) / 2;
-    const barY = 700;
+    // Ring Neon
+    ctx.strokeStyle = themeColors[0];
+    ctx.lineWidth = 8;
+    ctx.shadowColor = themeColors[0];
+    ctx.shadowBlur = 15;
+    ctx.beginPath(); ctx.arc(centerX, centerY, avatarSize / 2 + 10, 0, Math.PI * 2); ctx.stroke();
 
-    ctx.fillStyle = '#333';
-    ctx.beginPath();
-    ctx.roundRect(barX, barY, barWidth, barHeight, 40);
-    ctx.fill();
+    // 6. Barra di Progresso Cyber
+    const barW = 800;
+    const barH = 60;
+    const barX = (width - barW) / 2;
+    const barY = 750;
 
+    // Sfondo barra
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, 30); ctx.fill();
+
+    // Riempimento con gradiente e bagliore
     if (percentage > 0) {
-        const gradient = ctx.createLinearGradient(barX, 0, barX + barWidth, 0);
-        gradient.addColorStop(0, themeColors[0]);
-        gradient.addColorStop(1, themeColors[1]);
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.roundRect(barX, barY, (barWidth * percentage) / 100, barHeight, 40);
-        ctx.fill();
+        const pWidth = (barW * percentage) / 100;
+        const grad = ctx.createLinearGradient(barX, 0, barX + pWidth, 0);
+        grad.addColorStop(0, themeColors[0]);
+        grad.addColorStop(1, themeColors[1]);
+        
+        ctx.save();
+        ctx.shadowColor = themeColors[0];
+        ctx.shadowBlur = 15;
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.roundRect(barX, barY, pWidth, barH, 30); ctx.fill();
+        ctx.restore();
     }
 
-    ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 6;
-    ctx.beginPath();
-    ctx.roundRect(barX, barY, barWidth, barHeight, 40);
-    ctx.stroke();
+    // 7. Percentuale e Descrizione
+    drawNeonText(ctx, `${percentage}%`, width / 2, 920, 110, themeColors[0]);
 
-    ctx.font = 'bold 100px Impact, "Arial Black", sans-serif';
-    drawStrokedText(ctx, `${percentage}%`, width / 2, 820);
-
-    // 5. Descrizione
-    ctx.font = 'normal 50px Arial, sans-serif';
-    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'italic 45px Arial';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText(description, width / 2, 950);
+    ctx.fillText(description, width / 2, 1000);
 
     return canvas.toBuffer('image/jpeg');
 }
 
 const commandConfig = {
-    gaymetro: {
-        title: 'GAYMETRO',
-        themeColors: ['#FF00FF', '#4a004a'],
-        getDescription: (p) => {
-            if (p < 50) return 'Sei più simpatico che gay!';
-            if (p > 90) return 'Livelli di gayosità stratosferici!';
-            return 'Ce lo aspettavamo tutti!';
-        },
-    },
-    lesbiometro: {
-        title: 'LESBIOMETRO',
-        themeColors: ['#FF69B4', '#c71585'],
-        getDescription: (p) => {
-            if (p < 50) return 'Forse non hai visto abbastanza film romantici.';
-            if (p > 90) return 'Un amore smisurato per le ragazze!';
-            return 'Assolutamente confermato!';
-        },
-    },
-    masturbometro: {
-        title: 'MASTURBOMETRO',
-        themeColors: ['#8E44AD', '#E74C3C'],
-        getDescription: (p) => {
-            if (p < 50) return 'Hai bisogno di più hobby, amico.';
-            if (p > 90) return 'Una resistenza da vero campione!';
-            return 'Continua così (in solitaria)!';
-        },
-    },
-    fortunometro: {
-        title: 'FORTUNOMETRO',
-        themeColors: ['#2ECC71', '#006400'],
-        getDescription: (p) => {
-            if (p < 50) return 'Oggi la fortuna non è dalla tua parte.';
-            if (p > 90) return 'Sei stato baciato dalla dea bendata!';
-            return 'Potrebbe essere il tuo giorno fortunato!';
-        },
-    },
-    intelligiometro: {
-        title: 'INTELLIGIOMETRO',
-        themeColors: ['#3498DB', '#00008b'],
-        getDescription: (p) => {
-            if (p < 50) return 'C\'è ancora margine di miglioramento...';
-            if (p > 90) return 'Sei un genio assoluto!';
-            return 'Un\'intelligenza sopra la media!';
-        },
-    },
-    bellometro: {
-        title: 'BELLOMETRO',
-        themeColors: ['#E74C3C', '#f39c12'],
-        getDescription: (p) => {
-            if (p < 50) return 'La bellezza è soggettiva, ricorda!';
-            if (p > 90) return 'Una bellezza da copertina!';
-            return 'Sei quasi come sam!';
-        },
-    },
+    gaymetro: { title: 'GAY-SCANNER', themeColors: ['#FF00FF', '#800080'], getDescription: p => p > 80 ? "REGINA DELLE DRAG!" : p > 50 ? "L'arcobaleno ti segue!" : "Etero al 100% (forse)." },
+    lesbiometro: { title: 'LESBO-SCAN', themeColors: ['#FF1493', '#4B0082'], getDescription: p => p > 80 ? "Vibe da Girl Power assoluto!" : "Sguardo magnetico!" : "Solo amiche?" },
+    masturbometro: { title: 'FAP-METER', themeColors: ['#FF4500', '#2F4F4F'], getDescription: p => p > 80 ? "Chiama un idraulico per quel braccio!" : "Sessioni intense, eh?" : "Santo subito." },
+    fortunometro: { title: 'LUCK-DETECTOR', themeColors: ['#00FF00', '#004400'], getDescription: p => p > 80 ? "Vai a giocare al superenalotto!" : "La fortuna ti sorride." : "Oggi meglio stare a letto." },
+    intelligiometro: { title: 'BRAIN-METER', themeColors: ['#00FFFF', '#00008B'], getDescription: p => p > 80 ? "Elon Musk levati proprio!" : "Cervello in fiamme!" : "Caricamento neuroni fallito." },
+    bellometro: { title: 'BEAUTY-CHECK', themeColors: ['#FFD700', '#8B4513'], getDescription: p => p > 80 ? "Specchio delle mie brame!" : "Uno schianto!" : "Punta sulla simpatia." }
 };
 
 const handler = async (m, { conn, command, text }) => {
@@ -176,45 +160,35 @@ const handler = async (m, { conn, command, text }) => {
 
     const targetUser = m.mentionedJid?.[0] || m.quoted?.sender || m.sender;
     const targetName = text.trim() || conn.getName(targetUser);
-    
-    if (!targetName) {
-        return conn.reply(m.chat, `💜 Per usare il comando, menziona un utente, rispondi a un messaggio o scrivi un nome.`, m);
-    }
-
-    const percentage = Math.floor(Math.random() * 101);
-    const description = config.getDescription(percentage);
 
     try {
-        await conn.reply(m.chat, `\`Calcolo in corso per ${targetName}...\``, m);
+        await conn.reply(m.chat, `🔍 *Scansione biometrica per ${targetName}...*`, m);
 
         const avatar = await conn.profilePictureUrl(targetUser, 'image').catch(() => DEFAULT_AVATAR_URL);
+        const percentage = Math.floor(Math.random() * 101);
 
         const imageBuffer = await generateMeterImage({
             title: config.title,
-            percentage: percentage,
+            percentage,
             avatarUrl: avatar,
-            description: description,
+            description: config.getDescription(percentage),
             themeColors: config.themeColors,
         });
 
-        const caption = `💫 *Ecco il risultato per ${targetName}!*`;
-
         await conn.sendMessage(m.chat, {
             image: imageBuffer,
-            caption: caption,
+            caption: `✅ *Analisi completata per ${targetName}!*`,
             mentions: [targetUser]
         }, { quoted: m });
 
     } catch (e) {
         console.error(e);
-        await conn.reply(m.chat, `${global.errore}`, m);
+        await conn.reply(m.chat, `❌ Errore nel sistema di scansione.`, m);
     }
 };
 
-handler.help = Object.keys(commandConfig).map(cmd => `${cmd} <@tag/nome>`);//o forse era meglio fare tutto a mano
+handler.help = Object.keys(commandConfig).map(cmd => `${cmd} <@tag>`);
 handler.tags = ['giochi'];
-handler.register = true;
-handler.group = true;
 handler.command = Object.keys(commandConfig);
 
 export default handler;
