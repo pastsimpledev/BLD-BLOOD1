@@ -1,213 +1,135 @@
 import fetch from 'node-fetch'
 import { createCanvas, loadImage } from 'canvas'
 
-// Funzione per disegnare il cuore (usata in I Love)
+// --- HELPER: DISEGNA CUORE ---
 function drawHeart(ctx, x, y, width, height) {
     const topCurveHeight = height * 0.3;
+    ctx.save();
+    let grad = ctx.createRadialGradient(x, y + topCurveHeight, 10, x, y + topCurveHeight, width);
+    grad.addColorStop(0, '#ff4d4d');
+    grad.addColorStop(1, '#b30000');
+    ctx.fillStyle = grad;
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 15;
     ctx.beginPath();
     ctx.moveTo(x, y + topCurveHeight);
     ctx.bezierCurveTo(x, y, x - width / 2, y, x - width / 2, y + topCurveHeight);
     ctx.bezierCurveTo(x - width / 2, y + (height + topCurveHeight) / 2, x, y + (height + topCurveHeight) / 2, x, y + height);
     ctx.bezierCurveTo(x, y + (height + topCurveHeight) / 2, x + width / 2, y + (height + topCurveHeight) / 2, x + width / 2, y + topCurveHeight);
     ctx.bezierCurveTo(x + width / 2, y, x, y, x, y + topCurveHeight);
-    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
 }
 
-// Generatore immagine "I LOVE NAME"
+// --- EFFETTO: I LOVE ---
 async function createILoveImage(name) {
-    const width = 1080;
-    const height = 1080;
-    const canvas = createCanvas(width, height);
+    const canvas = createCanvas(1000, 1000);
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 1000, 1000);
+
     const fontFace = 'sans-serif';
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const firstLineY = height * 0.35;
-    const heartSize = 350;
-    ctx.fillStyle = 'black';
-    ctx.font = `bold 300px ${fontFace}`;
-    const iWidth = ctx.measureText('I').width;
-    const iX = width / 2 - iWidth / 2 - heartSize / 1.5;
-    ctx.fillText('I', iX, firstLineY);
-    const heartX = iX + iWidth + heartSize / 1.5;
-    const heartY = firstLineY - heartSize / 2;
-    drawHeart(ctx, heartX, heartY, heartSize, heartSize);
-    ctx.fillStyle = '#FF0000';
-    ctx.fill();
-    ctx.fillStyle = 'black';
-    let fontSize = 280;
+    ctx.fillStyle = '#1a1a1a';
+    
+    ctx.font = `bold 250px ${fontFace}`;
+    ctx.fillText('I', 300, 400);
+    drawHeart(ctx, 600, 250, 300, 300);
+
+    let fontSize = 200;
     ctx.font = `bold ${fontSize}px ${fontFace}`;
-    const maxTextWidth = width * 0.9;
-    while (ctx.measureText(name.toUpperCase()).width > maxTextWidth && fontSize > 40) {
+    while (ctx.measureText(name.toUpperCase()).width > 900) {
         fontSize -= 10;
         ctx.font = `bold ${fontSize}px ${fontFace}`;
     }
-    ctx.fillText(name.toUpperCase(), width / 2, height * 0.75);
+    ctx.shadowColor = 'rgba(0,0,0,0.1)';
+    ctx.shadowBlur = 10;
+    ctx.fillText(name.toUpperCase(), 500, 750);
     return canvas.toBuffer('image/jpeg');
 }
 
-// Funzione principale per applicare gli effetti (Gay, Trans, Sborra)
+// --- EFFETTO: SBORRA ---
+function drawRealisticSplat(ctx, x, y, size) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.random() * Math.PI);
+
+    // Corpo principale denso
+    let grad = ctx.createRadialGradient(-size*0.2, -size*0.2, 0, 0, 0, size);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.9, '#f2f2f2');
+    grad.addColorStop(1, '#d9d9d9');
+    
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    for(let i=0; i<10; i++) {
+        let ang = (i/10)*Math.PI*2;
+        let r = size * (0.8 + Math.random()*0.4);
+        ctx.lineTo(Math.cos(ang)*r, Math.sin(ang)*r);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Riflesso "Glossy"
+    ctx.beginPath();
+    ctx.ellipse(-size*0.3, -size*0.3, size*0.15, size*0.3, Math.PI/4, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fill();
+    ctx.restore();
+}
+
+// --- LOGICA PRINCIPALE ---
 const applicaEffetto = async (m, conn, tipoEffetto, usedPrefix, command) => {
     let who = m.quoted ? m.quoted.sender : m.mentionedJid?.[0] ? m.mentionedJid[0] : m.sender
-    
     try {
-        let bufferImmagine
-        // 1. Gestione Immagine Quotata
+        let bufferImmagine;
         if (m.quoted && (m.quoted.mtype === 'imageMessage' || m.quoted.mtype === 'viewOnceMessage')) {
             bufferImmagine = await m.quoted.download()
-        } 
-        // 2. Gestione Foto Profilo
-        else {
+        } else {
             let pp = await conn.profilePictureUrl(who, 'image').catch(() => null)
-            if (!pp) return m.reply('❌ L\'utente non ha una foto profilo pubblica o l\'immagine non è accessibile.')
+            if (!pp) return m.reply('❌ L\'utente non ha una foto profilo accessibile.')
             let res = await fetch(pp)
             bufferImmagine = await res.arrayBuffer()
         }
 
-        if (!bufferImmagine) throw new Error('Errore nel recupero dell\'immagine.')
+        let img = await loadImage(Buffer.from(bufferImmagine))
+        let canvas = createCanvas(img.width, img.height)
+        let ctx = canvas.getContext('2d')
 
-        let nomeUtente = await conn.getName(who)
-        // Passiamo tipoEffetto per decidere quale rendering usare
-        let bufferFinale = await applicaEffettiCanvas(bufferImmagine, tipoEffetto)
-        
-        const messaggi = { 
-            gay: [`${nomeUtente} è diventato gay! 🏳️‍🌈`],
-            trans: [`${nomeUtente} ha cambiato genere! 🏳️‍⚧️`],
-            sborra: [`${nomeUtente} è stato ricoperto di... gloria. 💦`]
-        }
-        
-        let msg = messaggi[tipoEffetto][Math.floor(Math.random() * messaggi[tipoEffetto].length)]
-        await conn.sendFile(m.chat, bufferFinale, 'effetto.jpg', `*\`${msg}\`*`, m, false, { mentions: [who] })
-        
-    } catch (e) {
-        console.error(e)
-        m.reply('❌ Si è verificato un errore nel processare l\'immagine.')
-    }
-}
+        // Sfondo immagine originale
+        ctx.drawImage(img, 0, 0)
 
-// Rendering Canvas per gli effetti
-async function applicaEffettiCanvas(buffer, tipo) {
-    let img = await loadImage(Buffer.from(buffer))
-    let canvas = createCanvas(img.width, img.height)
-    let ctx = canvas.getContext('2d')
-    ctx.drawImage(img, 0, 0)
-
-    if (tipo === 'sborra') {
-        // --- NUOVO EFFETTO MIGLIORATO ---
-        // Numero di schizzi principali basato sulla dimensione dell'immagine
-        let numMainSplats = 10 + Math.floor(Math.random() * 8);
-        
-        for (let i = 0; i < numMainSplats; i++) {
-            let x = Math.random() * img.width;
-            let y = Math.random() * img.height;
-            // Dimensione base dinamica
-            let baseSize = (img.width * 0.04) + Math.random() * (img.width * 0.03);
+        if (tipoEffetto === 'sborra') {
+            for (let i = 0; i < 15; i++) {
+                drawRealisticSplat(ctx, Math.random()*img.width, Math.random()*img.height, (img.width*0.05) + Math.random()*20)
+            }
+        } else {
+            // Overlay Pride di Classe
+            const pride = {
+                gay: ['#FF0000', '#FF8C00', '#FFEF00', '#008121', '#004CFF', '#760188'],
+                trans: ['#5BCEFA', '#F5A9B8', '#FFFFFF', '#F5A9B8', '#5BCEFA']
+            }
+            let colors = pride[tipoEffetto]
+            let grad = ctx.createLinearGradient(0, 0, img.width, img.height)
+            colors.forEach((c, i) => grad.addColorStop(i/(colors.length-1), c))
             
-            disegnaSborraRealistica(ctx, x, y, baseSize);
+            ctx.globalAlpha = 0.4;
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, img.width, img.height);
+            
+            // Frame / Bordo luminoso
+            ctx.globalAlpha = 1.0;
+            ctx.lineWidth = img.width * 0.04;
+            ctx.strokeStyle = grad;
+            ctx.strokeRect(0, 0, img.width, img.height);
         }
-    } else {
-        // Effetti Pride (Overlay colorato - invariato)
-        const pride = {
-            gay: ['#E40303', '#FF8C00', '#FFED00', '#008563', '#409CFF', '#955ABE'],
-            trans: ['#5BCEFA', '#F5A9B8', '#FFFFFF', '#F5A9B8', '#5BCEFA']
-        }
-        let colors = pride[tipo]
-        ctx.globalAlpha = 0.4
-        let grad = ctx.createLinearGradient(0, 0, 0, img.height)
-        colors.forEach((c, i) => grad.addColorStop(i / (colors.length - 1), c))
-        ctx.fillStyle = grad
-        ctx.fillRect(0, 0, img.width, img.height)
+
+        let nome = await conn.getName(who)
+        let finalBuffer = canvas.toBuffer('image/jpeg')
+        await conn.sendFile(m.chat, finalBuffer, 'result.jpg', `*Effetto ${tipoEffetto} applicato a ${nome}*`, m)
+    } catch (e) {
+        m.reply('❌ Errore durante l\'elaborazione.')
     }
-    return canvas.toBuffer('image/jpeg')
-}
-
-// --- FUNZIONE DI RENDERING AVANZATO ---
-function disegnaSborraRealistica(ctx, x, y, size) {
-    ctx.save();
-    ctx.translate(x, y);
-    
-    // Ruotiamo leggermente ogni schizzo per casualità
-    ctx.rotate(Math.random() * Math.PI * 2);
-
-    // 1. Alone di impatto (Splat basale molto trasparente)
-    ctx.globalAlpha = 0.25;
-    ctx.fillStyle = '#FFFFFF';
-    ctx.beginPath();
-    ctx.arc(0, 0, size * 1.3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 2. Nucleo Viscoso (Goccia principale con gradiente 3D)
-    ctx.globalAlpha = 1.0;
-    
-    // Creiamo una forma irregolare (non un cerchio perfetto)
-    ctx.beginPath();
-    let nPoints = 8;
-    for (let i = 0; i < nPoints; i++) {
-        let angle = (i / nPoints) * Math.PI * 2;
-        // Irregolarità del raggio
-        let randomRadius = size * (0.8 + Math.random() * 0.4);
-        let px = Math.cos(angle) * randomRadius;
-        let py = Math.sin(angle) * randomRadius;
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-    }
-    ctx.closePath();
-
-    // Gradiente radiale per volume lucido
-    let grad = ctx.createRadialGradient(-size*0.3, -size*0.3, size*0.1, 0, 0, size);
-    grad.addColorStop(0, '#FFFFFF'); // Centro bianco puro lucido
-    grad.addColorStop(0.8, '#F0F0F0'); // Bianco perla denso
-    grad.addColorStop(1, '#DCDCDC'); // Bordo leggermente grigio (ombra)
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    // 3. Micro-gocce satelliti (Schizzi piccoli intorno)
-    let nSatellites = 4 + Math.floor(Math.random() * 4);
-    for (let i = 0; i < nSatellites; i++) {
-        let ang = Math.random() * Math.PI * 2;
-        // Distanza dal centro variabile
-        let dist = size * (1.2 + Math.random() * 0.8);
-        // Dimensione satellite proporzionale
-        let satSize = size * (0.2 + Math.random() * 0.2);
-        
-        ctx.beginPath();
-        // Anche i satelliti hanno forma ellittica irregolare
-        ctx.ellipse(Math.cos(ang) * dist, Math.sin(ang) * dist, satSize, satSize * 0.7, ang, 0, Math.PI * 2);
-        ctx.fillStyle = Math.random() > 0.5 ? '#FFFFFF' : '#F5F5F5';
-        ctx.fill();
-    }
-
-    // 4. Colatura Viscosa (Dripping effect)
-    // Non tutti gli schizzi colano, 70% di probabilità
-    if (Math.random() > 0.3) {
-        ctx.restore(); // Resettiamo la rotazione per colare dritto verso il basso
-        ctx.save();
-        ctx.translate(x, y);
-
-        let dripWidth = size * (0.5 + Math.random() * 0.3);
-        let dripLength = size * (2 + Math.random() * 3); // Lunghezza casuale scia
-        
-        // Disegniamo la scia verticale allargata in fondo
-        ctx.beginPath();
-        ctx.moveTo(-dripWidth/2, 0);
-        // Scia dritta
-        ctx.lineTo(-dripWidth/2, dripLength);
-        // Base a goccia curva
-        ctx.bezierCurveTo(-dripWidth/2, dripLength + dripWidth, dripWidth/2, dripLength + dripWidth, dripWidth/2, dripLength);
-        ctx.lineTo(dripWidth/2, 0);
-        ctx.closePath();
-        
-        // Stesso gradiente lucido del nucleo
-        let dripGrad = ctx.createLinearGradient(0, 0, 0, dripLength + dripWidth);
-        dripGrad.addColorStop(0, '#FFFFFF');
-        dripGrad.addColorStop(1, '#E0E0E0');
-        ctx.fillStyle = dripGrad;
-        ctx.fill();
-    }
-
-    ctx.restore();
 }
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
