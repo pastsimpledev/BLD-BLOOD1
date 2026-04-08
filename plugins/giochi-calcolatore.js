@@ -33,15 +33,12 @@ function generateCyberBackground(ctx, width, height, colors) {
     }
 }
 
-// DISEGNO DINAMICO DEL MEMBRO (Spostato per spazio a lato)
+// DISEGNO DINAMICO DEL MEMBRO (Comando Cazzo)
 function drawMembro(ctx, x, y, size) {
     const baseSize = 55;
     const length = Math.max(40, size * 14); 
-    
     ctx.save();
     ctx.translate(x, y);
-    
-    // Palle
     ctx.fillStyle = '#FFB6C1';
     ctx.shadowColor = 'rgba(255, 105, 180, 0.4)';
     ctx.shadowBlur = 10;
@@ -49,20 +46,45 @@ function drawMembro(ctx, x, y, size) {
     ctx.arc(-baseSize / 1.5, 0, baseSize, 0, Math.PI * 2);
     ctx.arc(baseSize / 1.5, 0, baseSize, 0, Math.PI * 2);
     ctx.fill();
-
-    // Asta
     ctx.fillRect(-baseSize / 1.2, -length, baseSize * 1.6, length);
-
-    // Cappella
     ctx.fillStyle = '#FF69B4';
     ctx.beginPath();
     ctx.arc(0, -length, baseSize * 1.1, Math.PI, 0);
     ctx.fill();
-    
     ctx.restore();
 }
 
-async function generateMeterImage({ title, percentage, avatarUrl, description, themeColors, isCazzo }) {
+// DISEGNO DINAMICO DELLE TETTE (Comando Tette)
+function drawBoobs(ctx, x, y, size) {
+    const radius = 60 + (size * 8); // Il raggio cresce con la misura
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = '#FFD1DC';
+    ctx.shadowColor = 'rgba(255, 182, 193, 0.5)';
+    ctx.shadowBlur = 15;
+
+    // Sinistra
+    ctx.beginPath();
+    ctx.arc(-radius * 0.9, 0, radius, 0, Math.PI * 2);
+    ctx.fill();
+    // Destra
+    ctx.beginPath();
+    ctx.arc(radius * 0.9, 0, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Capezzoli
+    ctx.fillStyle = '#FFB6C1';
+    ctx.beginPath();
+    ctx.arc(-radius * 0.9, -radius * 0.1, radius * 0.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(radius * 0.9, -radius * 0.1, radius * 0.15, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+}
+
+async function generateMeterImage({ title, percentage, avatarUrl, description, themeColors, type }) {
     const width = 1080;
     const height = 1080;
     const canvas = createCanvas(width, height);
@@ -71,7 +93,6 @@ async function generateMeterImage({ title, percentage, avatarUrl, description, t
     generateCyberBackground(ctx, width, height, themeColors);
     const avatar = await loadImage(avatarUrl).catch(() => loadImage(DEFAULT_AVATAR_URL));
 
-    // Pannello principale
     ctx.save();
     ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
     ctx.roundRect(50, 50, width - 100, height - 100, 60);
@@ -80,7 +101,6 @@ async function generateMeterImage({ title, percentage, avatarUrl, description, t
 
     drawNeonText(ctx, title, width / 2, 160, 130, themeColors[0]);
 
-    // Avatar ridimensionato
     const avatarSize = 280;
     ctx.save();
     ctx.beginPath();
@@ -89,30 +109,27 @@ async function generateMeterImage({ title, percentage, avatarUrl, description, t
     ctx.drawImage(avatar, width / 2 - avatarSize / 2, 380 - avatarSize / 2, avatarSize, avatarSize);
     ctx.restore();
 
-    if (isCazzo) {
-        // RENDERING: Membro a sinistra, Numero a destra
-        const drawX = width / 2 - 120; // Spostiamo l'asset a sinistra
+    if (type === 'cazzo') {
+        const drawX = width / 2 - 150;
         const drawY = 880;
         drawMembro(ctx, drawX, drawY, percentage); 
-        
-        // Numero accanto (allineato all'asta)
-        drawNeonText(ctx, `${percentage}`, drawX + 220, drawY - (percentage * 7), 160, themeColors[0], 'left');
-        drawNeonText(ctx, `CM`, drawX + 220, drawY - (percentage * 7) + 80, 60, themeColors[0], 'left');
+        drawNeonText(ctx, `${percentage}`, drawX + 250, drawY - (percentage * 7), 180, themeColors[0], 'left');
+        drawNeonText(ctx, `CM`, drawX + 250, drawY - (percentage * 7) + 90, 70, themeColors[0], 'left');
+    } else if (type === 'tette') {
+        const drawY = 750;
+        drawBoobs(ctx, width / 2, drawY, percentage);
+        drawNeonText(ctx, `MISURA: ${percentage}ª`, width / 2, 920, 110, themeColors[0]);
     } else {
-        // Progress Bar standard per gli altri
         const barW = 800;
         const barX = (width - barW) / 2;
         ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
         ctx.roundRect(barX, 750, barW, 60, 30); ctx.fill();
-        
         const pWidth = (barW * percentage) / 100;
         ctx.fillStyle = themeColors[0];
         ctx.roundRect(barX, 750, pWidth, 60, 30); ctx.fill();
-        
         drawNeonText(ctx, `${percentage}%`, width / 2, 920, 110, themeColors[0]);
     }
 
-    // Descrizione in basso
     ctx.font = 'italic 42px Arial';
     ctx.fillStyle = '#FFFFFF';
     ctx.textAlign = 'center';
@@ -122,14 +139,15 @@ async function generateMeterImage({ title, percentage, avatarUrl, description, t
 }
 
 const commandConfig = {
-    gaymetro: { title: 'GAY-SCAN', themeColors: ['#FF00FF', '#4a004a'], getDescription: p => p > 70 ? "Livelli di glitter fuori scala!" : "Scansione neutra." },
-    lesbiometro: { title: 'LESBO-SCAN', themeColors: ['#FF1493', '#4B0082'], getDescription: p => "Sistema di rilevamento attivo." },
-    masturbometro: { title: 'FAP-METER', themeColors: ['#FF4500', '#2F4F4F'], getDescription: p => "Attenzione: rischio surriscaldamento!" },
-    fortunometro: { title: 'LUCK-SCAN', themeColors: ['#00FF00', '#004400'], getDescription: p => "Analisi probabilità completata." },
-    intelligiometro: { title: 'BRAIN-SCAN', themeColors: ['#00FFFF', '#00008B'], getDescription: p => "QI calcolato con successo." },
-    bellometro: { title: 'BEAUTY-CHECK', themeColors: ['#FFD700', '#8B4513'], getDescription: p => "Bellezza rilevata nel database." },
-    sottomessometro: { title: 'SUB-SCANNER', themeColors: ['#C0C0C0', '#2C3E50'], getDescription: p => "Ubbidienza: " + (p > 50 ? "Alta" : "Scarsa") },
-    cazzo: { title: 'DICK-SIZE', themeColors: ['#FFB6C1', '#C71585'], getDescription: p => p > 22 ? "Una bestia leggendaria!" : p < 12 ? "Piccolo ma coraggioso." : "Standard di sicurezza approvato." }
+    gaymetro: { title: 'GAY-SCAN', colors: ['#FF00FF', '#4a004a'], desc: p => "Analisi orientamento completata." },
+    lesbiometro: { title: 'LESBO-SCAN', colors: ['#FF1493', '#4B0082'], desc: p => "Vibe rilevata dal sistema." },
+    masturbometro: { title: 'FAP-METER', colors: ['#FF4500', '#2F4F4F'], desc: p => "Attenzione: polso a rischio." },
+    fortunometro: { title: 'LUCK-SCAN', colors: ['#00FF00', '#004400'], desc: p => "Probabilità calcolate." },
+    intelligiometro: { title: 'BRAIN-SCAN', colors: ['#00FFFF', '#00008B'], desc: p => "QI sopra la media." },
+    bellometro: { title: 'BEAUTY-CHECK', colors: ['#FFD700', '#8B4513'], desc: p => "Estetica approvata." },
+    sottomessometro: { title: 'SUB-SCANNER', colors: ['#C0C0C0', '#2C3E50'], desc: p => "Livello ubbidienza: " + p + "%" },
+    cazzo: { title: 'DICK-SIZE', colors: ['#FFB6C1', '#C71585'], desc: p => p > 20 ? "Un vero mostro!" : "Misure rilevate." },
+    tette: { title: 'BOOBS-SIZE', colors: ['#FFD1DC', '#FF69B4'], desc: p => p > 4 ? "Un bel davanzale!" : "Piccole ma sode." }
 };
 
 const handler = async (m, { conn, command, text }) => {
@@ -140,19 +158,21 @@ const handler = async (m, { conn, command, text }) => {
     const targetName = text.trim() || conn.getName(targetUser);
 
     try {
-        await conn.reply(m.chat, `🔍 *Analisi biometrica per ${targetName}...*`, m);
+        await conn.reply(m.chat, `🔍 *Analisi per ${targetName}...*`, m);
         const avatar = await conn.profilePictureUrl(targetUser, 'image').catch(() => DEFAULT_AVATAR_URL);
         
-        const isCazzo = command === 'cazzo';
-        const percentage = isCazzo ? Math.floor(Math.random() * 32) + 3 : Math.floor(Math.random() * 101);
+        let percentage;
+        if (command === 'cazzo') percentage = Math.floor(Math.random() * 32) + 3;
+        else if (command === 'tette') percentage = Math.floor(Math.random() * 6) + 1;
+        else percentage = Math.floor(Math.random() * 101);
 
         const imageBuffer = await generateMeterImage({
             title: config.title,
             percentage,
             avatarUrl: avatar,
-            description: config.getDescription(percentage),
-            themeColors: config.themeColors,
-            isCazzo
+            description: config.desc(percentage),
+            themeColors: config.colors,
+            type: command
         });
 
         await conn.sendMessage(m.chat, {
