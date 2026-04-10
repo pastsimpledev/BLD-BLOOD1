@@ -401,6 +401,7 @@ if (m.message?.protocolMessage?.type === 'MESSAGE_EDIT') {
             jadibotmd: false,
             antiPrivate: true,
             soloCreatore: false,
+            registrazioni: true, // DEFAULT
             status: 0
         })
 
@@ -440,7 +441,6 @@ if (m.message?.protocolMessage?.type === 'MESSAGE_EDIT') {
                 const normalizedOwner = groupMetadata.owner ? this.decodeJid(groupMetadata.owner) : null
                 const normalizedOwnerLid = groupMetadata.ownerLid ? this.decodeJid(groupMetadata.ownerLid) : null
 
-                // MODIFICATO: Controllo isMod aggiunto qui
                 isAdmin = (participants.some(u => {
                     const participantIds = [
                         this.decodeJid(u.id),
@@ -474,7 +474,6 @@ if (m.message?.protocolMessage?.type === 'MESSAGE_EDIT') {
                             return { ...u, id: normalizedId, jid: u.jid || normalizedId }
                         })
 
-                        // MODIFICATO: Controllo isMod aggiunto anche nel fallback
                         isAdmin = (participants.some(u => {
                             const participantIds = [
                                 this.decodeJid(u.id),
@@ -564,6 +563,12 @@ if (m.message?.protocolMessage?.type === 'MESSAGE_EDIT') {
 
                 if (!isAccept) continue
 
+                // --- OVERRIDE REGISTRAZIONI (FORZA L'ESECUZIONE) ---
+                if (settings.registrazioni === false) {
+                    plugin.register = false // Forza la proprietà del plugin a false temporaneamente
+                }
+                // --------------------------------------------------
+
                 if (m.isGroup && (plugin.admin || plugin.botAdmin)) {
                     const freshMetadata = global.groupCache.get(m.chat) || await fetchGroupMetadataWithRetry(this, m.chat)
                     if (freshMetadata) {
@@ -579,7 +584,6 @@ if (m.message?.protocolMessage?.type === 'MESSAGE_EDIT') {
                         const normalizedOwner = groupMetadata.owner ? this.decodeJid(groupMetadata.owner) : null
                         const normalizedOwnerLid = groupMetadata.ownerLid ? this.decodeJid(groupMetadata.ownerLid) : null
 
-                        // MODIFICATO: Controllo isMod anche nel ricalcolo plugin
                         isAdmin = (participants.some(u => {
                             const participantIds = [
                                 this.decodeJid(u.id),
@@ -699,7 +703,8 @@ if (m.message?.protocolMessage?.type === 'MESSAGE_EDIT') {
                     continue
                 }
 
-                if (plugin.register && !user.registered && settings.registrazioni === true) {
+                // BLOCCO REGISTRAZIONE SOLO SE ATTIVO
+                if (plugin.register && !user.registered && settings.registrazioni !== false) {
                     fail('unreg', m, this)
                     continue
                 }
@@ -829,10 +834,8 @@ if (m.message?.protocolMessage?.type === 'MESSAGE_EDIT') {
 }
 
 global.dfail = async (type, m, conn) => {
-    // RECUPERA IMPOSTAZIONI GLOBALI
+    // SECONDO LIVELLO DI PROTEZIONE: SE REGISTRAZIONE È OFF, BLOCCA IL MESSAGGIO UNREG
     const settings = global.db.data.settings[conn.user.jid] || {}
-    
-    // SE IL MODULO REGISTRAZIONI È SPENTO, IGNORA L'ERRORE UNREG
     if (type === 'unreg' && settings.registrazioni === false) return
 
     const nome = m.pushName || 'sam'
