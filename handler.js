@@ -698,6 +698,14 @@ if (m.message?.protocolMessage?.type === 'MESSAGE_EDIT') {
                     fail('private', m, this)
                     continue
                 }
+                
+                // --- LOGICA ATTIVA/DISATTIVA REGISTRAZIONI ---
+                if (settings.registrazioni && !user.registered && !['verify', 'registrazione', 'reg', 'register', 'registrare'].includes(command)) {
+                    fail('unreg', m, this)
+                    continue
+                }
+                // ---------------------------------------------
+
                 if (plugin.register && !user.registered) {
                     fail('unreg', m, this)
                     continue
@@ -862,5 +870,3 @@ watchFile(file, async () => {
     unwatchFile(file)     
     console.log(chalk.bgHex('#3b0d95')(chalk.white.bold("File: 'handler.js' Aggiornato")))
 })
-
-
