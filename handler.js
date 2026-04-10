@@ -699,16 +699,22 @@ if (m.message?.protocolMessage?.type === 'MESSAGE_EDIT') {
                     continue
                 }
                 
-                // --- LOGICA ATTIVA/DISATTIVA REGISTRAZIONI ---
-                if (settings.registrazioni && !user.registered && !['verify', 'registrazione', 'reg', 'register', 'registrare'].includes(command)) {
-                    fail('unreg', m, this)
-                    continue
+                // --- LOGICA ATTIVA/DISATTIVA REGISTRAZIONI (CORRETTA) ---
+                // Il bot chiede la registrazione SOLO se il modulo è su ON (true) nel Master Control
+                if (settings.registrazioni === true) {
+                    if (!user.registered && !['verify', 'registrazione', 'reg', 'register', 'registrare'].includes(command)) {
+                        fail('unreg', m, this)
+                        continue
+                    }
                 }
-                // ---------------------------------------------
+                // ------------------------------------------------------
 
                 if (plugin.register && !user.registered) {
-                    fail('unreg', m, this)
-                    continue
+                    // Se il modulo globale è OFF, ignoriamo anche il blocco dei singoli plugin
+                    if (settings.registrazioni === true) {
+                        fail('unreg', m, this)
+                        continue
+                    }
                 }
 
                 m.isCommand = true
