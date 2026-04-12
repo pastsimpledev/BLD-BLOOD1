@@ -18,7 +18,7 @@ let handler = async (m, { conn, command, usedPrefix }) => {
 │
 │ • \`GitHub:\` *github.com/BLOOD212*
 │ • \`Supporto:\` @393701330693
-│ • *instagram.com/bloodxvelith*
+│ • *instagram.com/blood_ilreal*
 │
 *╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*`;
     await conn.reply(
