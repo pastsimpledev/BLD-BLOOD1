@@ -3,7 +3,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     if (text.length < 5) return conn.reply(m.chat, '🌠 Il suggerimento deve essere di almeno 5 caratteri.', m)
     if (text.length > 500) return conn.reply(m.chat, '🌠 La lunghezza massima del suggerimento è di 500 caratteri.', m)
 
-    const staffChatId = '393476686131@s.whatsapp.net'; // Owner/Staff
+    const staffChatId = '393701330693@s.whatsapp.net'; // Owner/Staff
     const channelChatId = '120363418582531215@newsletter';
 
     const teks = `
