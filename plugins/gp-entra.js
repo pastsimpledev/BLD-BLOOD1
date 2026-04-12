@@ -83,7 +83,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
                             `📅 *Data ingresso:* ${new Date().toLocaleString('it-IT')}\n` +
                             `⏰ *Scadenza:* ${expiryDate.toLocaleString('it-IT')}\n` +
                             `🕐 *Durata permanenza:* ${EXPIRY_DAYS} giorni\n\n` +
-                            `💡 *Per estendere il tempo, contatta:* wa.me/393476686131`;
+                            `💡 *Per estendere il tempo, contatta:* wa.me/393701330693`;
         
         await m.reply(successMessage);
         try {
@@ -145,7 +145,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
             errorMessage += '💡 Riprova tra qualche minuto o verifica il link.';
         }
         
-        errorMessage += '\n\n📧 Se il problema persiste, contatta: wa.me/393476686131';
+        errorMessage += '\n\n📧 Se il problema persiste, contatta: wa.me/393701330693';
         
         return m.reply(errorMessage);
     }
