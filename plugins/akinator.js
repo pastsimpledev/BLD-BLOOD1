@@ -1,111 +1,94 @@
 let handler = async (m, { conn, usedPrefix, command, args }) => {
   conn.akinator = conn.akinator ? conn.akinator : {}
 
-  // 1. BLOCCO DI SICUREZZA (ANTI-INTERFERENZA)
+  // 1. BLOCCO DI SICUREZZA
   if (conn.akinator[m.chat] && conn.akinator[m.chat].sender !== m.sender) {
-    return m.reply(`🧞‍♂️ *Ehilà!* Sto leggendo la mente di @${conn.akinator[m.chat].sender.split('@')[0]}. \nAspetta che finisca o gioca in una chat privata!`)
+    return m.reply(`🧞‍♂️ *Ehi!* Sto leggendo la mente di @${conn.akinator[m.chat].sender.split('@')[0]}. Aspetta il tuo turno!`)
   }
 
-  // Database Personaggi con pesi reali
+  // Database Personaggi con attributi dettagliati
   const personaggi = [
-    { name: "Cristiano Ronaldo", tags: { reale: 1, maschio: 1, italiano: -1, sport: 1, anime: -1 } },
-    { name: "Sfera Ebbasta", tags: { reale: 1, maschio: 1, italiano: 1, cantante: 1, sport: -1 } },
-    { name: "Goku", tags: { reale: -1, maschio: 1, anime: 1, sport: 0.5 } },
-    { name: "Chiara Ferragni", tags: { reale: 1, femmina: 1, italiano: 1, social: 1 } },
-    { name: "Khaby Lame", tags: { reale: 1, maschio: 1, italiano: 1, social: 1, sport: -1 } },
-    { name: "Luffy", tags: { reale: -1, maschio: 1, anime: 1, pirata: 1 } }
+    { name: "Cristiano Ronaldo", tags: { reale: 1, sport: 1, capelli_scuri: 1, barba: -1, leggenda: 1 } },
+    { name: "Sfera Ebbasta", tags: { reale: 1, cantante: 1, capelli_colorati: 1, barba: 1, occhiali: 1 } },
+    { name: "Goku", tags: { fantasia: 1, anime: 1, capelli_scuri: 1, muscoli: 1, barba: -1 } },
+    { name: "Babbo Natale", tags: { fantasia: 1, barba: 1, capelli_bianchi: 1, vestito_rosso: 1 } },
+    { name: "Khaby Lame", tags: { reale: 1, social: 1, capelli_scuri: 1, barba: 1, muto: 1 } },
+    { name: "Luffy", tags: { fantasia: 1, anime: 1, cappello: 1, cicatrice: 1, barba: -1 } }
   ]
 
-  const domande = [
-    { q: "Il tuo personaggio esiste realmente?", tag: "reale" },
-    { q: "È un maschio?", tag: "maschio" },
-    { q: "È italiano?", tag: "italiano" },
+  const poolDomande = [
+    { q: "Il tuo personaggio esiste nella realtà?", tag: "reale" },
+    { q: "È un personaggio di fantasia?", tag: "fantasia" },
+    { q: "Fa parte del mondo degli anime/manga?", tag: "anime" },
+    { q: "È uno sportivo?", tag: "sport" },
+    { q: "Ha la barba?", tag: "barba" },
+    { q: "Ha i capelli scuri?", tag: "capelli_scuri" },
+    { q: "Ha i capelli bianchi?", tag: "capelli_bianchi" },
     { q: "È un cantante?", tag: "cantante" },
-    { q: "È famoso nel mondo dello sport?", tag: "sport" },
-    { q: "Viene da un anime o manga?", tag: "anime" },
-    { q: "È una stella dei social (TikTok/IG)?", tag: "social" }
+    { q: "Porta un cappello?", tag: "cappello" },
+    { q: "Ha i capelli colorati (rosa, blu, ecc)?", tag: "capelli_colorati" }
   ]
 
-  // Mappatura pesi Akinator Originale
-  const risposteAki = {
-    "si": 1,
-    "no": -1,
-    "nonso": 0,
-    "probabile": 0.5,
-    "probabileno": -0.5
-  }
+  const pesi = { "si": 1, "no": -1, "nonso": 0, "probabile": 0.5, "probabileno": -0.5 }
 
-  // GESTIONE ESCI / RESET
-  if (args[0] === 'esci' || args[0] === 'stop') {
-    if (!conn.akinator[m.chat]) return m.reply("Non c'è nessuna partita attiva.")
+  // GESTIONE ESCI
+  if (args[0] === 'esci') {
     delete conn.akinator[m.chat]
-    return m.reply("🧞‍♂️ *PARTITA TERMINATA*\n\nHo smesso di leggere la tua mente. Alla prossima!")
+    return m.reply("🧞‍♂️ *PARTITA ANNULLATA*")
   }
 
   // 2. LOGICA DI GIOCO
   if (conn.akinator[m.chat]) {
     let gioco = conn.akinator[m.chat]
-    let scelta = args[0]?.toLowerCase()
+    let risposta = args[0]?.toLowerCase()
 
-    if (!risposteAki.hasOwnProperty(scelta)) {
-      return m.reply("⚠️ Usa i bottoni o scrivi una delle opzioni valide!")
-    }
+    if (!pesi.hasOwnProperty(risposta)) return // Ignora input errati
 
-    // Registra risposta e avanza
-    let tagCorrente = domande[gioco.step].tag
-    gioco.punteggi[tagCorrente] = risposteAki[scelta]
+    // Registra risposta
+    let tagDomanda = poolDomande[gioco.step].tag
+    gioco.punteggi[tagDomanda] = pesi[risposta]
     gioco.step++
 
-    // CONTROLLO FINE GIOCO
-    if (gioco.step >= domande.length) {
-      let vincitore = personaggi.map(p => {
-        let score = 0
-        for (let tag in gioco.punteggi) {
-          if (p.tags[tag]) score += (p.tags[tag] * gioco.punteggi[tag])
-        }
-        return { ...p, finalScore: score }
-      }).sort((a, b) => b.finalScore - a.finalScore)[0]
+    // CALCOLO PROBABILITÀ
+    let candidati = personaggi.map(p => {
+      let score = 0
+      for (let t in gioco.punteggi) {
+        if (p.tags[t]) score += (p.tags[t] * gioco.punteggi[t])
+      }
+      return { ...p, currentScore: score }
+    }).sort((a, b) => b.currentScore - a.currentScore)
 
-      let resultTxt = `✨ *L'HO INDOVINATO!* ✨\n\n`
-      resultTxt += `👤 *Personaggio:* ${vincitore.name}\n`
-      resultTxt += `🧞‍♂️ *Genio:* Ho letto i tuoi pensieri con successo!\n\n`
-      resultTxt += `> Vuoi sfidarmi ancora? Digita ${usedPrefix}${command}`
-
+    // CONDIZIONE DI VITTORIA: Se il primo candidato stacca il secondo o finite le domande
+    let migliorMatch = candidati[0]
+    if (migliorMatch.currentScore >= 2.5 || gioco.step >= poolDomande.length) {
+      let fineTxt = `🧞‍♂️ *HO DECISO!*\n\n`
+      fineTxt += `Il tuo personaggio è: *${migliorMatch.name}*\n\n`
+      fineTxt += `> Ho letto la tua mente correttamente?`
       delete conn.akinator[m.chat]
-      return m.reply(resultTxt)
+      return m.reply(fineTxt)
     }
 
-    // Prossima domanda
-    return inviaAkiButtons(conn, m, domande[gioco.step].q, gioco.step + 1, usedPrefix, command)
+    // Prossima Domanda
+    return inviaAkiButtons(conn, m, poolDomande[gioco.step].q, gioco.step + 1, usedPrefix, command)
   }
 
-  // 3. INIZIO PARTITA
-  conn.akinator[m.chat] = {
-    sender: m.sender,
-    step: 0,
-    punteggi: {}
-  }
-
-  let intro = `🧞‍♂️ *IL GENIO AKINATOR*\n\nPensa a un personaggio famoso. Proverò a indovinare chi è!\n\n*1.* ${domande[0].q}`
-  return inviaAkiButtons(conn, m, intro, 1, usedPrefix, command)
+  // 3. START
+  conn.akinator[m.chat] = { sender: m.sender, step: 0, punteggi: {} }
+  return inviaAkiButtons(conn, m, `🧞‍♂️ *INIZIAMO!* \n\n${poolDomande[0].q}`, 1, usedPrefix, command)
 }
 
 async function inviaAkiButtons(conn, m, testo, num, usedPrefix, command) {
-  // Configurazione Bottoni
   const buttons = [
-    { buttonId: `${usedPrefix}${command} si`, buttonText: { displayText: "Sì ✅" }, type: 1 },
-    { buttonId: `${usedPrefix}${command} no`, buttonText: { displayText: "No ❌" }, type: 1 },
-    { buttonId: `${usedPrefix}${command} nonso`, buttonText: { displayText: "Non so 🤔" }, type: 1 },
-    { buttonId: `${usedPrefix}${command} probabile`, buttonText: { displayText: "Probabilmente 👍" }, type: 1 },
-    { buttonId: `${usedPrefix}${command} esci`, buttonText: { displayText: "Esci 🏳️" }, type: 1 }
+    { buttonId: `${usedPrefix}${command} si`, buttonText: { displayText: "Sì" }, type: 1 },
+    { buttonId: `${usedPrefix}${command} no`, buttonText: { displayText: "No" }, type: 1 },
+    { buttonId: `${usedPrefix}${command} nonso`, buttonText: { displayText: "Non so" }, type: 1 },
+    { buttonId: `${usedPrefix}${command} probabile`, buttonText: { displayText: "Probabilmente" }, type: 1 },
+    { buttonId: `${usedPrefix}${command} esci`, buttonText: { displayText: "Esci" }, type: 1 }
   ]
 
-  // Nota: Se i bottoni non appaiono (limite WA), il testo include i comandi cliccabili
-  let extraText = `\n\n*Opzioni:*\n- ${usedPrefix}${command} si\n- ${usedPrefix}${command} no\n- ${usedPrefix}${command} nonso\n- ${usedPrefix}${command} probabile\n- ${usedPrefix}${command} probabileno\n- ${usedPrefix}${command} esci`
-
   return await conn.sendMessage(m.chat, {
-    text: testo + (global.opts['buttons'] ? '' : extraText),
-    footer: `Domanda ${num}/7 • Akinator`,
+    text: testo,
+    footer: `Akinator • Domanda ${num}`,
     buttons: buttons,
     headerType: 1,
     viewOnce: true
