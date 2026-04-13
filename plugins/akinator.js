@@ -1,15 +1,14 @@
 import { Aki } from 'aki-api'
 
-// FIX SSL: Necessario per molti server Linux
+// FIX SSL per server Linux/VPS
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   let nomeDelBot = global.db.data.nomedelbot || `𝖇𝖑𝖔𝖔𝖉𝖇𝖔𝖙`
   
-  // Inizializza l'oggetto delle sessioni
   conn.akinator = conn.akinator ? conn.akinator : {}
 
-  // Se l'utente vuole resettare la partita
+  // Comando per resettare in caso di blocco
   if (text === 'reset') {
     delete conn.akinator[m.sender]
     return m.reply("🔄 Sessione di Akinator resettata.")
@@ -19,9 +18,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (conn.akinator[m.sender]) {
     let { aki, msg } = conn.akinator[m.sender]
     
-    // Controlla che l'input sia un numero valido
     if (!text || isNaN(text) || text < 0 || text > 4) {
-      return m.reply(`⚠ Rispondi con un numero da 0 a 4!\n\n0 = Sì\n1 = No\n2 = Non so\n3 = Probabilmente sì\n4 = Probabilmente no`)
+      return m.reply(`⚠ Rispondi con un numero!\n\n0: Sì\n1: No\n2: Non so\n3: Probabile\n4: Probabile No`)
     }
 
     try {
@@ -46,24 +44,23 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
       let domanda = `*🤖 AKINATOR - Domanda n. ${aki.currentStep + 1}*\n\n`
       domanda += `> _${aki.question}_\n\n`
-      domanda += `0 (Sì), 1 (No), 2 (Boh), 3 (Probabile), 4 (Probabile No)`
+      domanda += `0 (Sì), 1 (No), 2 (Boh), 3 (Sì+), 4 (No+)`
 
       await conn.sendMessage(m.chat, { text: domanda, edit: msg }, { quoted: m })
 
     } catch (e) {
       console.error("[ERRORE AKINATOR]:", e.message)
       delete conn.akinator[m.sender]
-      return m.reply("❌ Akinator mi ha bloccato (Cloudflare 403). Riprova tra un po'.")
+      return m.reply("❌ Errore critico: Il server ha chiuso la connessione. L'IP è probabilmente bannato.")
     }
 
   } else {
     // 2. AVVIO NUOVA PARTITA
     try {
-      // Tentativo di avvio con parametri IT
-      let aki = new Aki({ 
-        region: 'it', 
-        childMode: false 
-      })
+      let aki = new Aki({ region: 'it', childMode: false })
+      
+      // TENTATIVO DI BYPASS HEADER
+      aki.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
       
       await aki.start()
       
@@ -77,8 +74,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     } catch (e) {
       console.error("[ERRORE AVVIO]:", e.message)
-      // Se fallisce qui, l'IP è bannato
-      return m.reply("❌ Errore 403: Il server di Akinator ha bloccato il bot. L'IP del tuo server è segnalato come bot.")
+      return m.reply("❌ *Errore 403 Forbidden*\n\nIl firewall di Akinator ha bloccato il tuo server. Prova a cambiare la regione del bot o attendi 1 ora.")
     }
   }
 }
