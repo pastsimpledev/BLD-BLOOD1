@@ -1,5 +1,3 @@
-// Plugin Antinuke con Whitelist locale per ogni gruppo
-
 const handler = m => m;
 
 handler.before = async function (m, { conn, participants, isBotAdmin }) {
@@ -9,43 +7,50 @@ handler.before = async function (m, { conn, participants, isBotAdmin }) {
   const chat = global.db.data.chats[m.chat];
   if (!chat?.antinuke) return;
 
+  // Monitora: Cambio nome (21), Rimozione (28), Promozione (29), Retrocessione (30)
   if (![21, 28, 29, 30].includes(m.messageStubType)) return;
 
   const sender = m.key?.participant || m.participant || m.sender;
   if (!sender) return;
 
   const botJid = conn.user.id.split(':')[0] + '@s.whatsapp.net';
-  const BOT_OWNERS = global.owner.map(o => o[0] + '@s.whatsapp.net');
+  
+  // --- PROTEZIONE OWNER DEL BOT ---
+  // Prende la lista degli owner dal global.owner e la formatta correttamente
+  const BOT_OWNERS = global.owner
+    .filter(o => o[0])
+    .map(o => o[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net');
 
-  // --- NUOVA LOGICA: LEGGE LA WHITELIST DEL GRUPPO ---
   const localWhitelist = chat.whitelist || [];
-
-  let founderJid = null;
+  
+  let ownerGroup = null;
   try {
     const metadata = await conn.groupMetadata(m.chat);
-    founderJid = metadata.owner;
+    ownerGroup = metadata.owner || metadata.subjectOwner;
   } catch {
-    founderJid = null;
+    ownerGroup = null;
   }
 
-  // Lista autorizzati (Bot + Owner + Whitelist di questo gruppo + Fondatore)
+  // LISTA AUTORIZZATI (Bot, Proprietari del Bot, Whitelist, Creatore Gruppo)
   const allowed = [
     botJid,
     ...BOT_OWNERS,
     ...localWhitelist, 
-    founderJid
+    ownerGroup
   ].filter(Boolean);
+
+  // Se l'azione è compiuta da un OWNER del bot o autorizzato, l'antinuke si ferma
+  if (allowed.includes(sender)) return;
 
   if (m.messageStubType === 28) {
     const affected = m.messageStubParameters?.[0];
     if (affected === sender) return;
   }
 
-  if (allowed.includes(sender)) return;
-
   const senderData = participants.find(p => p.jid === sender);
   if (!senderData?.admin) return;
 
+  // FILTRO: Rimuove admin a tutti tranne che agli OWNER del bot e autorizzati
   const usersToDemote = participants
     .filter(p => p.admin)
     .map(p => p.jid)
@@ -57,6 +62,7 @@ handler.before = async function (m, { conn, participants, isBotAdmin }) {
     await conn.groupParticipantsUpdate(m.chat, usersToDemote, 'demote');
   }
 
+  // Chiude il gruppo
   await conn.groupSettingUpdate(m.chat, 'announcement');
 
   const action =
@@ -74,10 +80,10 @@ handler.before = async function (m, { conn, participants, isBotAdmin }) {
 ┃ 『 🚫 』 \`Azione:\` *${action}* NON autorizzata
 ┃
 ┃ 🔻 \`Sanzioni Applicate:\`
-┃ ➤ *Admin rimossi a tappeto*
-┃ ➤ *Gruppo chiuso (Sola lettura)*
+┃ ➤ *Admin rimossi* (Owner Bot protetti)
+┃ ➤ *Gruppo chiuso in sola lettura*
 ┃
-┃ 👑 \`Owner avvisati immediatamente.\`
+┃ 👑 \`Proprietari avvisati.\`
 ╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒`
 
   await conn.sendMessage(m.chat, {
@@ -85,8 +91,8 @@ handler.before = async function (m, { conn, participants, isBotAdmin }) {
     contextInfo: {
       mentionedJid: [sender, ...usersToDemote, ...BOT_OWNERS].filter(Boolean),
       externalAdReply: {
-        title: 'SISTEMA DI PROTEZIONE LOCALE',
-        body: 'Sicurezza gruppo attiva',
+        title: 'SISTEMA DI SICUREZZA OWNER',
+        body: 'Protezione Proprietari Attiva',
         thumbnailUrl: 'https://qu.ax/TfUj.jpg',
         sourceUrl: 'BLOODANTINUKE',
         mediaType: 1,
