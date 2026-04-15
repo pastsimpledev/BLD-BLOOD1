@@ -9,6 +9,7 @@ const PERM = {
 };
 
 const featureRegistry = [
+  { key: 'bestemmiometro', store: 'chat', perm: PERM.ADMIN, name: '🤬 Bestemmiometro', desc: 'Rileva e conta le bestemmie' }, // AGGIUNTO QUI
   { key: 'antidelete', store: 'chat', perm: PERM.ADMIN, name: '🗑️ Antidelete', desc: 'Recupera messaggi eliminati' },
   { key: 'welcome', store: 'chat', perm: PERM.ADMIN, name: '👋 Welcome', desc: 'Messaggio di benvenuto' },
   { key: 'goodbye', store: 'chat', perm: PERM.ADMIN, name: '🚪 Addio', desc: 'Messaggio di addio' },
@@ -92,8 +93,8 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isS
 
 *┍━━━━━〔 🛡️ sɪᴄᴜʀᴇᴢﾞᴀ 〕━━━━━┑*\n`;
 
-  // Aggiunto 'antidelete' alla lista della sicurezza
-  const sicurezzaKeys = ['antidelete', 'antigore', 'modoadmin', 'antivoip', 'antiLink', 'antiLinkUni', 'antiLink2', 'antitrava', 'antinuke', 'antioneview', 'antispam', 'antisondaggi', 'antiparolacce', 'antiBot', 'antiBot2', 'antimedia', 'antitagall', 'antiporno'];
+  // Aggiunto 'bestemmiometro' alla lista sicurezza
+  const sicurezzaKeys = ['bestemmiometro', 'antidelete', 'antigore', 'modoadmin', 'antivoip', 'antiLink', 'antiLinkUni', 'antiLink2', 'antitrava', 'antinuke', 'antioneview', 'antispam', 'antisondaggi', 'antiparolacce', 'antiBot', 'antiBot2', 'antimedia', 'antitagall', 'antiporno'];
   featureRegistry.filter(f => sicurezzaKeys.includes(f.key)).forEach(f => {
     menu += `┇ ${getStatus(f)} ${f.name}\n┇ _${f.desc}_\n┇ ➤ *${f.key}*\n┇\n`;
   });
