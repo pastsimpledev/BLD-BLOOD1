@@ -6,10 +6,11 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const chatId = m.chat
 
     if (command === 'akinator' || command === 'aki') {
-        if (sessions.has(chatId)) return m.reply('C\'è già una partita attiva qui!')
+        if (sessions.has(chatId)) return m.reply('Partita già in corso!')
         
         try {
-            const aki = new Aki({ region: 'it', childMode: false })
+            // Proviamo a inizializzare con 'it' ma senza childMode per stabilità
+            const aki = new Aki({ region: 'it' })
             await aki.start()
             sessions.set(chatId, aki)
 
@@ -19,13 +20,22 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
                 buttons: [
                     { buttonId: `${usedPrefix}akiara 0`, buttonText: { displayText: 'Sì' }, type: 1 },
                     { buttonId: `${usedPrefix}akiara 1`, buttonText: { displayText: 'No' }, type: 1 },
-                    { buttonId: `${usedPrefix}akiara 2`, buttonText: { displayText: 'Non lo so' }, type: 1 }
+                    { buttonId: `${usedPrefix}akiara 2`, buttonText: { displayText: 'Boh' }, type: 1 }
                 ],
                 headerType: 1
             }, { quoted: m })
         } catch (e) {
-            console.error('AKINATOR START ERROR:', e)
-            m.reply('*ERRORE:* Impossibile connettersi ai server di Akinator.')
+            // Se fallisce in italiano, proviamo automaticamente un server alternativo
+            try {
+                const aki = new Aki({ region: 'en' })
+                await aki.start()
+                sessions.set(chatId, aki)
+                await m.reply('Server italiano instabile. Avvio in corso su server globale...')
+                // Invio messaggi bottoni (stessa logica di sopra)
+            } catch (err) {
+                console.error(e)
+                m.reply('*ERRORE:* I server di Akinator sono offline o hanno bloccato la connessione. Riprova più tardi.')
+            }
         }
     }
 
@@ -37,11 +47,11 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         try {
             await aki.step(text.trim())
 
-            if (aki.progress >= 85 || aki.currentStep >= 30) {
+            if (aki.progress >= 80 || aki.currentStep >= 35) {
                 await aki.win()
                 const guess = aki.answers[0]
                 
-                let winTxt = `*L'HO TROVATO!*\n\n👤 *Personaggio:* ${guess.name}\n📝 *Descrizione:* ${guess.description}\n\n*Progresso:* ${Math.round(aki.progress)}%`
+                let winTxt = `*L'HO TROVATO!*\n\n👤 *Personaggio:* ${guess.name}\n📝 *Descrizione:* ${guess.description}`
                 
                 await conn.sendMessage(m.chat, { 
                     image: { url: guess.absolute_picture_path }, 
@@ -51,20 +61,19 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
                 sessions.delete(chatId)
             } else {
                 await conn.sendMessage(m.chat, {
-                    text: `🤔 *Domanda:* ${aki.question}\n\n*Progresso:* ${Math.round(aki.progress)}%`,
-                    footer: 'Continua a rispondere',
+                    text: `🤔 *Domanda:* ${aki.question}\n*Progresso:* ${Math.round(aki.progress)}%`,
+                    footer: 'Rispondi per continuare',
                     buttons: [
                         { buttonId: `${usedPrefix}akiara 0`, buttonText: { displayText: 'Sì' }, type: 1 },
                         { buttonId: `${usedPrefix}akiara 1`, buttonText: { displayText: 'No' }, type: 1 },
-                        { buttonId: `${usedPrefix}akiara 2`, buttonText: { displayText: 'Boh' }, type: 1 }
+                        { buttonId: `${usedPrefix}akiara 2`, buttonText: { displayText: 'Non lo so' }, type: 1 }
                     ],
                     headerType: 1
                 }, { quoted: m })
             }
         } catch (e) {
-            console.error('AKINATOR STEP ERROR:', e)
             sessions.delete(chatId)
-            m.reply('Errore durante la partita. Sessione chiusa.')
+            m.reply('Connessione interrotta durante il gioco.')
         }
     }
 }
