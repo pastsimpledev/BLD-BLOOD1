@@ -52,14 +52,10 @@ handler.before = async function (m, { conn, isAdmin, isOwner }) {
         const randomInsult = insulti[Math.floor(Math.random() * insulti.length)]
 
         const tag = m.sender.split('@')[0]
-        let res = `🔥 *ALLERTA BLASFEMIA* 🔥\n`
-        res += `━━━━━━━━━━━━━━━\n`
-        res += `👤 *Peccatore:* @${tag}\n`
-        res += `🤬 *Bestemmie:* \`+${count}\`\n`
-        res += `📈 *Peccati Totali:* \`${user.bestemmie}\`\n`
-        res += `🏆 *Rango Infernale:* ${getSinRank(user.bestemmie)}\n`
-        res += `━━━━━━━━━━━━━━━\n`
-        res += `💬 _"${randomInsult}"_`
+        let res =let res = `🔥 *BLASFEMIA* @${tag} ➔ \`+${count}\`\n`
+res += `📈 *Totale:* \`${user.bestemmie}\` | ${getSinRank(user.bestemmie)}\n`
+res += `💬 _"${randomInsult}"_`
+
 
         await conn.reply(m.chat, res, m, { mentions: [m.sender] })
     }
