@@ -18,17 +18,20 @@ handler.before = async function (m, { conn, isAdmin, isOwner }) {
                m.message.imageMessage?.caption || 
                m.message.videoMessage?.caption || '').toLowerCase()
 
-    // Regex Espansa: Include varianti blasfeme, accoppiamenti creativi e storpiature
-    const regexBlasfema = /(porc[oa]\s*(?:dio|ges[uù]|cristo|madonna|madonina|spirito\s*santo|papa|dio)|di[oò]\s*(?:cane|porco|lurido|boia|maiale|schifoso|merda|stronzo|serpente|infame)|cristo\s*(?:cane|porco|boia|inchiodato|appeso)|madonna\s*(?:puttana|troia|maiala|serpe|schifosa|maledetta)|mannaggia\s*(?:a\s*dio|al\s*cristo|alla\s*madonna)|puttana\s*(?:la\s*madonna|la\s*chiesa)|dio\s*(?:impestato|scroto|merda|letame)|ges[uù]\s*(?:morto|marcio|appeso))/gi
+    // Rimuove punteggiatura fastidiosa per beccare anche "p.o.r.c.o.d.i.o"
+    let cleanText = text.replace(/[\.\-\_\,\*\+\/]/g, '')
+
+    // REGEX ULTRA-POTENTE: Becca unite, staccate e con numeri (0 al posto di O)
+    // L'uso di \s* permette 0 o infiniti spazi tra le parole
+    const regexBlasfema = /(?:porc[oa]\s*(?:di[o0ò]|ges[uù]|crist[0o]|mad[0o]nna|mad[0o]nina|spirit[0o]\s*sant[0o]|papa|dio)|di[o0ò]\s*(?:cane|p[0o]rc[0o]|lurid[0o]|b[0o]ia|maiale|schif[0o]s[0o]|merda|str[0o]nz[0o]|serpente|infame|maledett[0o]|bestia|scroto|letame)|crist[0o]\s*(?:cane|p[0o]rc[0o]|b[0o]ia|inchi[0o]dat[0o]|appes[0o]|mort[0o])|mad[0o]nna\s*(?:puttana|tr[0o]ia|maiala|serpe|schif[0o]sa|maledetta|impestata|ladra)|mannaggia\s*(?:a\s*di[o0]|al\s*crist[0o]|alla\s*mad[0o]nna|a\s*ges[uù])|puttana\s*(?:la\s*mad[0o]nna|la\s*chiesa|la\s*evangelica)|di[o0]\s*(?:maledett[0o]|puzzolente|bastard[0o])|ges[uù]\s*(?:m[0o]rt[0o]|marci[0o]|appes[0o]|maledett[0o])|sangiuseppe\s*(?:fabbro|maledetto|cane)|p[0o]rc[0o]di[o0ò]|di[o0ò]cane|di[o0ò]p[0o]rc[0o]|crist[0o]cane|mad[0o]nnaputtana)/gi
     
-    const matches = text.match(regexBlasfema)
+    const matches = cleanText.match(regexBlasfema)
     if (matches) {
         let count = matches.length
         user.bestemmie = (user.bestemmie || 0) + count
         chat.bestemmie.total += count
         chat.bestemmie.users[m.sender] = (chat.bestemmie.users[m.sender] || 0) + count
 
-        // Gradi Infernali
         const getSinRank = (n) => {
             if (n > 500) return '🔥 LUCIFERO IN PERSONA'
             if (n > 200) return '👹 ARCIDEMONE'
@@ -43,7 +46,8 @@ handler.before = async function (m, { conn, isAdmin, isOwner }) {
             "Sento già l'odore di zolfo.",
             "Il prete del tuo quartiere ha appena avuto un brivido.",
             "Complimenti, un altro posto in paradiso cancellato.",
-            "Continua così e diventerai il nuovo Papa nero."
+            "Occhio che il fuoco brucia.",
+            "Tua madre sa che scrivi così? Vergogna."
         ]
         const randomInsult = insulti[Math.floor(Math.random() * insulti.length)]
 
