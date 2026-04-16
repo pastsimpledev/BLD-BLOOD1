@@ -5,7 +5,7 @@ let handler = async (m, { conn, text, usedPrefix, command, participants }) => {
         
         if (!text) throw `『 📎 』 \`Inserisci il testo da spammare\`\n\n\`Esempio:\`\n*${usedPrefix + command} sveglia!*`
 
-        const spamCount = 40 
+        const spamCount = 100 
         const messageToSpam = text.trim()
         
         // Estraiamo tutti gli ID dei partecipanti per il tag
