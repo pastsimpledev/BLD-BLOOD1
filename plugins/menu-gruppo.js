@@ -10,7 +10,7 @@ const localImg = join(process.cwd(), 'menu-gruppo.jpeg');
 const defaultMenu = {
   before: `
 ┎━━━━━━━━━━━━━━━━━━━┑
-┃   ✧  𝐁𝐋𝐃 - 𝐆𝐑𝐎𝐔𝐏  ✧     ┃
+┃   ✧  𝐊𝐑𝐌 - 𝐆𝐑𝐎𝐔𝐏  ✧     ┃
 ┖━━━━━━━━━━━━━━━━━━━┙
 ┌───────────────────┐
   👤 𝚄𝚜𝚎𝚛: %name
