@@ -24,7 +24,7 @@ let handler = async (m, { conn, usedPrefix }) => {
     const message = `
 ╭━━━━━━•✦•━━━━━━╮
                   𝑷𝑰𝑵𝑮
-            𝖇𝖑𝖔𝖔𝖉𝖇𝖔𝖙
+            ₭𐌀Ɽ₥𐌀
 ╰━━━━━━•✦•━━━━━━╯
 
 𝑼𝒑𝒕𝒊𝒎𝒆: ${uptimeStr}
@@ -32,7 +32,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 𝑨𝒗𝒗𝒊𝒐: ${activationTime}
 
 ╭━━━━━━•✦•━━━━━━╮
-   𝑶𝒘𝒏𝒆𝒓: 𝐁𝐋𝐎𝐎𝐃
+   𝑶𝒘𝒏𝒆𝒓: ₥𐌄𐌏Ⱳ
    𝑺𝒕𝒂𝒕𝒐: _Online_
 ╰━━━━━━•✦•━━━━━━╯
 `.trim()
