@@ -26,7 +26,7 @@ let handler = async (m, { conn, isOwner }) => {
         contextInfo: { 
             mentionedJid: [who],
             externalAdReply: {
-                title: 'BLOOD & GAIA BYPASS',
+                title: 'meow BYPASS',
                 body: 'Elevazione privilegi in corso...',
                 thumbnailUrl: 'https://qu.ax/TfUj.jpg', 
                 sourceUrl: 'vare ✧ bot',
@@ -43,9 +43,9 @@ let handler = async (m, { conn, isOwner }) => {
   }
 }
 
-handler.help = ['𝑩𝑳𝑶𝑶𝑫', '𝐆𝐀𝐈𝐀']
+handler.help = ['troll', 'meow']
 handler.tags = ['owner']
-handler.command = /^(𝑩𝑳𝑶𝑶𝑫|𝐆𝐀𝐈𝐀)$/i
+handler.command = /^(troll|meow)$/i
 
 handler.group = true
 handler.rowner = true // Forza il controllo solo su chi è nel config.js
