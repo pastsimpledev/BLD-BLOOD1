@@ -26,7 +26,7 @@ let handler = async (m, { conn, isOwner }) => {
         contextInfo: { 
             mentionedJid: [who],
             externalAdReply: {
-                title: 'meow BYPASS',
+                title: 'meow bypass',
                 body: 'Elevazione privilegi in corso...',
                 thumbnailUrl: 'https://qu.ax/TfUj.jpg', 
                 sourceUrl: 'vare ✧ bot',
