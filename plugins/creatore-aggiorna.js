@@ -12,7 +12,7 @@ let handler = async (m, { conn, text }) => {
       }
       if (checkUpdates.includes('Your branch is behind')) {
         let hoodangels = execSync('git reset --hard && git pull' + (m.fromMe && text ? ' ' + text : ''), { encoding: 'utf-8' })
-        await conn.reply(m.chat, `🔄 BLD BLOOD Bot aggiornato con successo!\n\n${hoodangels}`, m)
+        await conn.reply(m.chat, `🔄 ₭𐌀Ɽ₥𐌀 Bot aggiornato con successo!\n\n${hoodangels}`, m)
         await m.react('🍥')
       } else {
         await conn.reply(m.chat, '⚠️ Stato repository non chiaro. Forzando aggiornamento...', m)
