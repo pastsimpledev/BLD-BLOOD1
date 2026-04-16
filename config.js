@@ -11,11 +11,11 @@ import NodeCache from 'node-cache'
 const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf-8'))
 const moduleCache = new NodeCache({ stdTTL: 300 });
 
-/*⭑⭒━━━✦❘༻☾⋆⁺₊✧ 𝖇𝖑𝖔𝖔𝖉𝖇𝖔𝖙✧₊⁺⋆☽༺❘✦━━━⭒⭑*/
+/*⭑⭒━━━✦❘༻☾⋆⁺₊✧ karma✧₊⁺⋆☽༺❘✦━━━⭒⭑*/
 
-global.sam = ['3455383567',]
+global.sam = ['+393455383567',]
 global.owner = [
-  ['3455383567', 'meow', true],
+  ['+393455383567', 'meow', true],
   ['', '', true],
   ['', '', true],
   ['', '', true], 
