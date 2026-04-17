@@ -29,7 +29,7 @@ handler.before = async function (m, { conn, isAdmin, isBotAdmin, isOwner, isSam 
 
     const text = `${header}
 ╭
-┃ 🛡️ \`Stato:\` *Protocollo Blood Attivo*
+┃ 🛡️ \`Stato:\` *Protocollo Karma Attivo*
 ┃
 ┃ 『 👤 』 \`Target:\` ${utente}
 ┃ 『 🌍 』 \`Origine:\` *Estera / VOIP*
@@ -44,7 +44,7 @@ handler.before = async function (m, { conn, isAdmin, isBotAdmin, isOwner, isSam 
       mentions: [decodedSender],
       contextInfo: {
         externalAdReply: {
-          title: 'BLOOD BORDER CONTROL',
+          title: 'KARMA BORDER CONTROL',
           body: 'Accesso negato: Numero non autorizzato',
           thumbnailUrl: 'https://qu.ax/TfUj.jpg',
           mediaType: 1
