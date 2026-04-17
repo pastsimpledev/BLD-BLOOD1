@@ -63,7 +63,7 @@ export async function before(m, { conn, isAdmin, isBotAdmin, isOwner, isSam }) {
             mentions: [m.sender],
             contextInfo: {
                 externalAdReply: {
-                    title: 'KARMA CRASH PROTECTION',
+                    title: 'PHOBIA CRASH PROTECTION',
                     body: 'Minaccia neutralizzata',
                     thumbnailUrl: 'https://qu.ax/TfUj.jpg',
                     mediaType: 1,
