@@ -47,7 +47,7 @@ export async function before(m, { conn, isAdmin, isBotAdmin, isOwner, isSam }) {
 
         const textMsg = `${header}
 ╭
-┃ 🛡️ \`Stato:\` *Protocollo karma Attivo*
+┃ 🛡️ \`Stato:\` *Protocollo phobia Attivo*
 ┃
 ┃ 『 👤 』 \`Target:\` @${userTag}
 ┃ 『 ⚠️ 』 \`Rilevato:\` *Tentativo di Crash*
