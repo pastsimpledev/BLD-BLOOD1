@@ -36,13 +36,13 @@ export async function before(m, { conn, isAdmin, isBotAdmin, isOwner, isSam }) {
     })
     .catch(() => {})
 
-  // Messaggio estetico KRM-KARMA
+  // Messaggio estetico Phobia
   const header = `⋆｡˚『 ╭ \`ANTIMEDIA SYSTEM\` ╯ 』˚｡⋆`
   const footer = `╰⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒`
   
   const text = `${header}
 ╭
-┃ 🛡️ \`Stato:\` *Protocollo Karma Attivo*
+┃ 🛡️ \`Stato:\` *Protocollo phobia  Attivo*
 ┃
 ┃ 『 👤 』 \`Target:\` @${m.sender.split('@')[0]}
 ┃ 『 🖼️ 』 \`Rilevato:\` *Media Permanente*
