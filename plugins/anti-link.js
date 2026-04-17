@@ -65,7 +65,7 @@ async function handleViolation(conn, m, reason, isBotAdmin) {
 
     const text = `${header}
 ╭
-┃ 🚨 \`Stato:\` *Protocollo Blood Attivo*
+┃ 🚨 \`Stato:\` *Protocollo Karma Attivo*
 ┃
 ┃ 『 👤 』 \`Target:\` @${sender.split('@')[0]}
 ┃ 『 🚫 』 \`Azione:\` *Messaggio Rimosso*
