@@ -7,7 +7,7 @@ import { join } from 'path'
 const defaultMenu = {
   before: `
 ┎━━━━━━━━━━━━━━━━━━━┑
-┃   ✧  𝙺𝚁𝙼 - 𝙲𝚁𝙴𝙰𝚃𝙾𝚁  ✧   ┃
+┃  ✧  𝙲𝚁𝙴𝙰𝚃𝙾𝚁  ✧  ┃
 ┖━━━━━━━━━━━━━━━━━━━┙
 ┌───────────────────┐
   👤 𝙾𝚠𝚗𝚎𝚛: %name
@@ -71,16 +71,13 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
     await m.react('👨‍💻')
 
     // --- INVIO SOLO TESTO (RIMOSSO VIDEO/IMMAGINE) ---
-    await conn.sendMessage(m.chat, {
-      text: text.trim(),
-      contextInfo: {
+   await conn.sendMessage(m.chat, {
+    text: text.trim(),
+    contextInfo: {
         mentionedJid: [m.sender],
         forwardedNewsletterMessageInfo: {
-          newsletterJid: '120363232743845068@newsletter',
-          newsletterName: "✧ 𝙺𝚁𝙼-𝙱𝙾𝚃 𝙲𝚁𝙴𝙰𝚃𝙾𝚁 ✧"
-        }
-      }
-    }, { quoted: m })
+            newsletterJid: '12036323274384506@newsletter',
+            newsletterName: '✧ PHB-BOT  ✧'
 
   } catch (e) {
     console.error(e)
