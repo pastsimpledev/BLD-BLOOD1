@@ -78,22 +78,16 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname, args, command}) => {
     await m.react('💳')
 
     // --- INVIO COME IMMAGINE (SOSTITUITO VIDEO) ---
-    await conn.sendMessage(m.chat, {
-      image: { url: localImg },
-      caption: text.trim(),
-      contextInfo: {
+   await conn.sendMessage(m.chat, {
+    text: text.trim(),
+    contextInfo: {
         mentionedJid: [m.sender],
         forwardedNewsletterMessageInfo: {
-          newsletterJid: '120363232743845068@newsletter',
-          newsletterName: "✧ 𝙱𝙻𝙳-𝙱𝙾𝚃 𝙴𝙲𝙾𝙽𝙾𝙼𝚈 ✧"
+            newsletterJid: '12036323274384506@newsletter',
+            newsletterName: '✧ PHB-BOT ECONOMY ✧'
         }
-      }
-    }, { quoted: m })
-
-  } catch (e) {
-    console.error(e)
-    conn.reply(m.chat, '❌ Error in Core System: Check if menu-euro.jpeg exists.', m)
-  }
+    }
+}, { quoted: m })
 }
 
 handler.help = ['menueuro']
