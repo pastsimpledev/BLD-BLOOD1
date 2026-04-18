@@ -26,20 +26,20 @@ global.prems = ['xxxxxxxxxxx', 'xxxxxxxxxxx', 'xxxxxxxxxxx']
 
 /*⭑⭒━━━✦❘༻🩸 INFO BOT 🕊️༺❘✦━━━⭒⭑*/
 
-global.nomepack = 'karma'
-global.nomebot = 'karma'
-global.wm = 'karma'
-global.autore = 'karma'
-global.dev = 'karma'
-global.testobot = `karma`
+global.nomepack = 'fear'
+global.nomebot = 'fear'
+global.wm = 'fear'
+global.autore = 'fear'
+global.dev = 'fear'
+global.testobot = `fear`
 global.versione = pkg.version
-global.errore = '*ERRORE INATTESO*, UTILIZZA IL COMANDO .segnala (errore) per contattare lo sviluppatore. contatto diretto:+39 370 133 0693'
+global.errore = '*ERRORE INATTESO*, UTILIZZA IL COMANDO .segnala (errore) per contattare lo sviluppatore. contatto diretto:+1 (982) 254 0529'
 
 /*⭑⭒━━━✦❘༻🌐 LINK 🌐༺❘✦━━━⭒⭑*/
 
-global.repobot ='https//wa.me/393455383567'
-global.gruppo = 'https://chat.whatsapp.com/KdLKg5DoZ2CGrNlbqJRdV9'
-global.insta = 'https://www.instagram.com/bloodvelith'
+global.repobot ='https//wa.me/19822540529'
+global.gruppo = 'https://chat.whatsapp.com/IuQL9usREuWE9Eivhf9fRz'
+global.insta = 'https://www.instagram.com/identityspoofing'
 
 /*⭑⭒━━━✦❘༻ MODULI ༺❘✦━━━⭒⭑*/
 
