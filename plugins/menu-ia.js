@@ -19,7 +19,7 @@ let tags = {
 const defaultMenu = {
   before: `
 ┎━━━━━━━━━━━━━━━━━━━┑
-┃   ✧   FEAR   ✧   ┃
+┃   ✧    AI    ✧   ┃
 ┖━━━━━━━━━━━━━━━━━━━┙
 ┌───────────────────┐
   👤 𝚄𝚜𝚎𝚛: %name
@@ -84,16 +84,13 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
     await m.react('🧠')
 
     // --- INVIO CON IMMAGINE E CONTEXT GRUPPO ---
-    await conn.sendMessage(m.chat,
-      caption: text.trim(),
-      contextInfo: {
+   await conn.sendMessage(m.chat, {
+    text: text.trim(),
+    contextInfo: {
         mentionedJid: [m.sender],
         forwardedNewsletterMessageInfo: {
-          newsletterJid: '120363232743845068@newsletter',
-          newsletterName: "✧ FEAR-𝙱𝙾𝚃 𝙸𝙽𝚃𝙴𝙻𝙻𝙸𝙶𝙴𝙽𝙲𝙴 ✧"
-        }
-      }
-    }, { quoted: m })
+            newsletterJid: '12036323274384506@newsletter',
+            newsletterName: '✧ PHB-BOT ECONOMY ✧'
 
   } catch (e) {
     console.error(e)
