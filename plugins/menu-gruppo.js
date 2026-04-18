@@ -77,17 +77,13 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
     await m.react('🛡️')
 
     // --- INVIO COME IMMAGINE (SOSTITUITO VIDEO) ---
-    await conn.sendMessage(m.chat, {
-      image: { url: localImg },
-      caption: text.trim(),
-      contextInfo: {
+       await conn.sendMessage(m.chat, {
+    text: text.trim(),
+    contextInfo: {
         mentionedJid: [m.sender],
         forwardedNewsletterMessageInfo: {
-          newsletterJid: '120363232743845068@newsletter',
-          newsletterName: "✧ PHOBIA-BOT 𝙶𝚁𝙾𝚄𝙿 𝙰𝙳𝙼𝙸𝙽 ✧"
-        }
-      }
-    }, { quoted: m })
+            newsletterJid: '12036323274384506@newsletter',
+            newsletterName: '✧ PHB-BOT ✧'
 
   } catch (e) {
     console.error(e)
