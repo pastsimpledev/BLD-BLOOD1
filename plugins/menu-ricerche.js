@@ -7,7 +7,7 @@ import os from 'os'
 const defaultMenu = {
   before: `
 ┎━━━━━━━━━━━━━━━━━━━┑
-┃   ✧  𝐊𝐑𝐌 - 𝐒𝐄𝐀𝐑𝐂𝐇  ✧    ┃
+┃   ✧ 𝐒𝐄𝐀𝐑𝐂𝐇  ✧   ┃
 ┖━━━━━━━━━━━━━━━━━━━┙
 ┌───────────────────┐
   👤 𝚄𝚜𝚎𝚛: %name
@@ -66,16 +66,13 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
 
     let text = _text.replace(new RegExp(`%(${Object.keys(replace).sort((a, b) => b.length - a.length).join('|')})`, 'g'), (_, name) => '' + replace[name])
 
-    await conn.sendMessage(m.chat, { 
-      text: text.trim(), 
-      contextInfo: {
+   await conn.sendMessage(m.chat, {
+    text: text.trim(),
+    contextInfo: {
         mentionedJid: [m.sender],
         forwardedNewsletterMessageInfo: {
-          newsletterJid: '120363232743845068@newsletter',
-          newsletterName: "✧ 𝙱𝙻𝙳-𝙱𝙾𝚃 𝚂𝙴𝙰𝚁𝙲𝙷 𝚂𝚈𝚂𝚃𝙴𝙼 ✧"
-        }
-      }
-    }, { quoted: m })
+            newsletterJid: '12036323274384506@newsletter',
+            newsletterName: '✧ PHB-BOT  ✧'
 
     await m.react('🔍')
 
