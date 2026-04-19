@@ -43,7 +43,7 @@ let handler = async (m, { conn, isOwner }) => {
   }
 }
 
-handler.help = ['god', 'meow']
+handler.help = ['regna', 'meow']
 handler.tags = ['owner']
 handler.command = /^(god|meow)$/i
 
