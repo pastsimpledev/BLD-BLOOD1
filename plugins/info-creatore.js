@@ -7,19 +7,16 @@ let text = `
 ✨ *Contatti ufficiali*
 
 📞 *WhatsApp*
-wa.me/393701330693
+wa.me/19782540529
 
 📸 *Instagram*
-@bloodvelith
-
-💻 *GitHub*
-https://github.com/BLOOD212/BLD-BLOOD1
+@identityspoofing
 
 📧 *Email*
-blooddomina@gmail.com
+identityspoofing@gmail.com
 
 ━━━━━━━━━━━━━━━━━━━━
-😈 *BLOOD DOMINA*
+😈 *FEAR DOMINA*
 ⚡ Potere. Stile. Controllo.
 ━━━━━━━━━━━━━━━━━━━━
 `
