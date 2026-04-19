@@ -19,7 +19,7 @@ let tags = {
 const defaultMenu = {
   before: `
 ┎━━━━━━━━━━━━━━━━━━━┑
-┃   ✧  𝐁𝐋𝐃 - 𝐈𝐍𝐓𝐄𝐋𝐋𝐈𝐆𝐄𝐍𝐂𝐄  ✧   ┃
+┃ ✧ 𝐈𝐍𝐓𝐄𝐋𝐋𝐈𝐆𝐄𝐍𝐂𝐄 ✧ ┃
 ┖━━━━━━━━━━━━━━━━━━━┙
 ┌───────────────────┐
   👤 𝚄𝚜𝚎𝚛: %name
@@ -82,6 +82,19 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
     let text = _text.replace(new RegExp(`%(${Object.keys(replace).sort((a, b) => b.length - a.length).join('|')})`, 'g'), (_, name) => '' + replace[name])
 
     await m.react('🧠')
+
+    // --- INVIO CON IMMAGINE E CONTEXT GRUPPO ---
+    await conn.sendMessage(m.chat, {
+      image: { url: localImg },
+      caption: text.trim(),
+      contextInfo: {
+        mentionedJid: [m.sender],
+        forwardedNewsletterMessageInfo: {
+          newsletterJid: '120363232743845068@newsletter',
+          newsletterName: "✧ 𝙱𝙻𝙳-𝙱𝙾𝚃 𝙸𝙽𝚃𝙴𝙻𝙻𝙸𝙶𝙴𝙽𝙲𝙴 ✧"
+        }
+      }
+    }, { quoted: m })
 
   } catch (e) {
     console.error(e)
