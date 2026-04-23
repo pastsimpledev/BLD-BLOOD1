@@ -32,7 +32,7 @@ const SHORT_URL_REGEX = new RegExp(
 );
 
 const REQUEST_HEADERS = {
-    'User-Agent': 'KRM-KARMA/3.0',
+    'User-Agent': 'FEAR/3.0',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'DNT': '1',
     'Connection': 'keep-alive'
@@ -65,7 +65,7 @@ async function handleViolation(conn, m, reason, isBotAdmin) {
 
     const text = `${header}
 ╭
-┃ 🚨 \`Stato:\` *Protocollo phobia Attivo*
+┃ 🚨 \`Stato:\` *Protocollo fear Attivo*
 ┃
 ┃ 『 👤 』 \`Target:\` @${sender.split('@')[0]}
 ┃ 『 🚫 』 \`Azione:\` *Messaggio Rimosso*
@@ -79,7 +79,7 @@ async function handleViolation(conn, m, reason, isBotAdmin) {
         mentions: [sender],
         contextInfo: {
             externalAdReply: {
-                title: 'KARMA SECURITY SYSTEM',
+                title: 'FEAR SECURITY SYSTEM',
                 body: 'Link vietato rilevato',
                 thumbnailUrl: 'https://qu.ax/TfUj.jpg',
                 mediaType: 1,
