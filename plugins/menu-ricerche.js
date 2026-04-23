@@ -72,7 +72,7 @@ let handler = async (m, { conn, usedPrefix: _p, __dirname }) => {
         mentionedJid: [m.sender],
         forwardedNewsletterMessageInfo: {
             newsletterJid: '12036323274384506@newsletter',
-            newsletterName: '✧ PHB-BOT  ✧'
+            newsletterName: '✧ FEAR-BOT  ✧'
 
     await m.react('🔍')
 
