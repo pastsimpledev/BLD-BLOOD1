@@ -24,7 +24,7 @@ let handler = async (m, { conn, usedPrefix }) => {
     const message = `
 ╭━━━━━━•✦•━━━━━━╮
                   𝑷𝑰𝑵𝑮
-            ₭𐌀Ɽ₥𐌀
+            Ƒ𐌄𐌀Ɽ
 ╰━━━━━━•✦•━━━━━━╯
 
 𝑼𝒑𝒕𝒊𝒎𝒆: ${uptimeStr}
